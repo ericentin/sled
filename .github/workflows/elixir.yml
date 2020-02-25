@@ -12,30 +12,15 @@ jobs:
     - name: Setup rust
       uses: actions-rs/toolchain@v1.0.5
       with:
-        profile: minimal
-        toolchain: stable
-        components: rustfmt, clippy
         default: true
+        toolchain: stable
+        profile: minimal
+        components: rustfmt, clippy
     - name: Setup elixir
       uses: actions/setup-elixir@v1
       with:
         elixir-version: 1.10.1
         otp-version: 22.2.7
-    - name: Cache mix deps
-      uses: actions/cache@v1.1.2
-      with:
-        path: deps
-        key: ${{ runner.os }}-mix-deps-${{ hashFiles('mix.lock') }}
-    - name: Cache mix _build
-      uses: actions/cache@v1.1.2
-      with:
-        path: _build
-        key: ${{ runner.os }}-mix-_build-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/sled_nif/Cargo.toml') }}
-    - name: Cache priv
-      uses: actions/cache@v1.1.2
-      with:
-        path: priv
-        key: ${{ runner.os }}-priv-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/sled_nif/Cargo.toml') }}
     - name: Install Dependencies
       run: mix deps.get
     - name: Compile
