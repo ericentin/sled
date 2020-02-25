@@ -38,5 +38,15 @@ jobs:
         key: ${{ runner.os }}-priv-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/sled_nif/Cargo.toml') }}
     - name: Install Dependencies
       run: mix deps.get
+    - name: Compile
+      run: MIX_ENV=test mix compile --warnings-as-errors
     - name: Run Tests
       run: mix test
+    - name: Check Elixir Formatting
+      run: mix format --check-formatted
+    - name: Check Rust Formatting
+      working-directory: "native/sled_nif"
+      run: cargo fmt -- --check
+    - name: Rust Clippy
+      working-directory: "native/sled_nif"
+      run: cargo clippy --all
