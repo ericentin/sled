@@ -1,3 +1,5 @@
+![Elixir CI](https://github.com/ericentin/sled/workflows/Elixir%20CI/badge.svg)
+
 # Sled
 
 ***EVEN MORE NOT READY FOR PRODUCTION THAN SLED!!!***
