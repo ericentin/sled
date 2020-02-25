@@ -21,28 +21,6 @@ jobs:
       with:
         elixir-version: 1.10.1
         otp-version: 22.2.7
-    - name: Cache mix
-      uses: actions/cache@v1
-      with:
-        path: deps
-        key: ${{ runner.os }}-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
-        restore-keys: |
-          ${{ runner.os }}-mix-
-    - name: Cache cargo registry
-      uses: actions/cache@v1
-      with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry
-    - name: Cache cargo index
-      uses: actions/cache@v1
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index
-    - name: Cache cargo build
-      uses: actions/cache@v1
-      with:
-        path: native/sled_nif/target
-        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.toml') }}
     - name: Install Dependencies
       run: mix deps.get
     - name: Run Tests
