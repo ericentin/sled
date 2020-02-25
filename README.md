@@ -1,4 +1,4 @@
-![Elixir CI](https://github.com/ericentin/sled/workflows/Elixir%20CI/badge.svg)
+[![Elixir CI](https://github.com/ericentin/sled/workflows/Elixir%20CI/badge.svg)](https://github.com/ericentin/sled/actions?query=workflow%3A%22Elixir+CI%22)
 
 # Sled
 
