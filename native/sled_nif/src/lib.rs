@@ -33,9 +33,9 @@ fn on_load(env: Env, _info: Term) -> bool {
 fn sled_open<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
     let db_name: String = args[0].decode()?;
 
-    match sled::open(db_name.clone()) {
+    match sled::open(db_name) {
         Ok(t) => {
-            let resource = ResourceArc::new(SledResource { t: t });
+            let resource = ResourceArc::new(SledResource { t });
             Ok((atoms::ok(), resource).encode(env))
         }
         Err(_) => Ok(atoms::error().encode(env)),
