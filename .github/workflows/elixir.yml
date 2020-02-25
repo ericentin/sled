@@ -21,6 +21,21 @@ jobs:
       with:
         elixir-version: 1.10.1
         otp-version: 22.2.7
+    - name: Cache mix deps
+      uses: actions/cache@v1.1.2
+      with:
+        path: deps
+        key: ${{ runner.os }}-mix-deps-${{ hashFiles("mix.lock") }}
+    - name: Cache mix _build
+      uses: actions/cache@v1.1.2
+      with:
+        path: _build
+        key: ${{ runner.os }}-mix-_build-${{ hashFiles("mix.lock") }}-${{ hashFiles("native/sled_nif/Cargo.toml" }}
+    - name: Cache priv
+      uses: actions/cache@v1.1.2
+      with:
+        path: priv
+        key: ${{ runner.os }}-priv-${{ hashFiles("mix.lock") }}-${{ hashFiles("native/sled_nif/Cargo.toml" }}
     - name: Install Dependencies
       run: mix deps.get
     - name: Run Tests
