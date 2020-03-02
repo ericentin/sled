@@ -1,3 +1,5 @@
+#![warn(clippy::all)]
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
 use rustler::{resource_struct_init, Encoder, Env, Error, OwnedBinary, ResourceArc, Term};
 use sled;
 
