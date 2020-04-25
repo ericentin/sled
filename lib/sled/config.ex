@@ -16,22 +16,24 @@ defmodule Sled.Config do
               idgen_persist_interval: nil,
               read_only: nil
 
+    @type maybe(type) :: type | nil
+
     @type t :: %__MODULE__{
-            path: Path.t(),
-            flush_every_ms: integer(),
-            temporary: boolean(),
-            create_new: boolean(),
-            cache_capacity: integer(),
-            print_profile_on_drop: boolean(),
-            use_compression: boolean(),
-            compression_factor: integer(),
-            snapshot_after_ops: integer(),
-            segment_cleanup_threshold: integer(),
-            segment_cleanup_skew: integer(),
-            segment_mode: atom(),
-            snapshot_path: Path.t(),
-            idgen_persist_interval: integer(),
-            read_only: boolean()
+            path: maybe(Path.t()),
+            flush_every_ms: maybe(integer()),
+            temporary: maybe(boolean()),
+            create_new: maybe(boolean()),
+            cache_capacity: maybe(integer()),
+            print_profile_on_drop: maybe(boolean()),
+            use_compression: maybe(boolean()),
+            compression_factor: maybe(integer()),
+            snapshot_after_ops: maybe(integer()),
+            segment_cleanup_threshold: maybe(integer()),
+            segment_cleanup_skew: maybe(integer()),
+            segment_mode: maybe(atom()),
+            snapshot_path: maybe(Path.t()),
+            idgen_persist_interval: maybe(integer()),
+            read_only: maybe(boolean())
           }
   end
 
@@ -40,6 +42,7 @@ defmodule Sled.Config do
   @doc false
   defstruct ref: nil
 
+  @spec new(Sled.Config.Options.t() | keyword()) :: Sled.Config.t()
   def new(options \\ %Options{})
 
   def new(%Options{} = options) do
