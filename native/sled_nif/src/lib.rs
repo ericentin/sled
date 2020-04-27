@@ -67,7 +67,7 @@ fn on_load(env: Env, _info: Term) -> bool {
 
 fn sled_config_new<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
     let config_options: SledConfigOptions = args[0].decode()?;
-    let mut config = sled::Config::default();
+    let mut config = sled::Config::new();
     config = set_if_configured(
         config,
         sled::Config::flush_every_ms,
@@ -187,11 +187,6 @@ fn sled_open<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
     do_sled_open(sled::open(db_name), env)
 }
 
-fn sled_config_inspect<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
-    let config: ResourceArc<SledConfig> = args[0].decode()?;
-    Ok(format!("{:?}", config.config).encode(env))
-}
-
 fn do_sled_open<'a>(result: sled::Result<sled::Db>, env: Env<'a>) -> Result<Term<'a>, Error> {
     match result {
         Ok(db) => {
@@ -200,6 +195,11 @@ fn do_sled_open<'a>(result: sled::Result<sled::Db>, env: Env<'a>) -> Result<Term
         }
         Err(_) => Ok(atoms::error().encode(env)),
     }
+}
+
+fn sled_config_inspect<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
+    let config: ResourceArc<SledConfig> = args[0].decode()?;
+    Ok(format!("{:?}", config.config).encode(env))
 }
 
 fn sled_insert<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
@@ -211,6 +211,16 @@ fn sled_insert<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
     Ok(atoms::ok().encode(env))
 }
 
+fn sled_get<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
+    let resource: ResourceArc<SledDb> = args[0].decode()?;
+    let k: String = args[1].decode()?;
+    match resource.db.get(k.as_bytes()) {
+        Ok(Some(v)) => Ok((atoms::ok(), SledIVec(v)).encode(env)),
+        Ok(None) => Ok((atoms::ok(), atoms::nil()).encode(env)),
+        Err(_inner) => Ok(atoms::error().encode(env)),
+    }
+}
+
 struct SledIVec(sled::IVec);
 
 impl Encoder for SledIVec {
@@ -219,15 +229,5 @@ impl Encoder for SledIVec {
         let mut bin = OwnedBinary::new(len).unwrap();
         bin.as_mut_slice().copy_from_slice(self.0.as_ref());
         bin.release(env).to_term(env)
-    }
-}
-
-fn sled_get<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
-    let resource: ResourceArc<SledDb> = args[0].decode()?;
-    let k: String = args[1].decode()?;
-    match resource.db.get(k.as_bytes()) {
-        Ok(Some(v)) => Ok((atoms::ok(), SledIVec(v)).encode(env)),
-        Ok(None) => Ok((atoms::ok(), atoms::nil()).encode(env)),
-        Err(_inner) => Ok(atoms::error().encode(env)),
     }
 }
