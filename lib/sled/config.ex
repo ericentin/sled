@@ -18,9 +18,13 @@ defmodule Sled.Config do
 
     @type maybe(type) :: type | nil
 
+    @typedoc """
+    `flush_every_ms` note: if `should_flush` is false, `ms` should be `nil`.
+    `snapshot_path` note: if `should_have_snapshot_path` is false, `path` should be `nil`.
+    """
     @type t :: %__MODULE__{
             path: maybe(Path.t()),
-            flush_every_ms: maybe(integer()),
+            flush_every_ms: maybe({should_flush :: boolean(), ms :: integer() | nil}),
             temporary: maybe(boolean()),
             create_new: maybe(boolean()),
             cache_capacity: maybe(integer()),
@@ -30,8 +34,9 @@ defmodule Sled.Config do
             snapshot_after_ops: maybe(integer()),
             segment_cleanup_threshold: maybe(integer()),
             segment_cleanup_skew: maybe(integer()),
-            segment_mode: maybe(atom()),
-            snapshot_path: maybe(Path.t()),
+            segment_mode: maybe(:gc | :linear),
+            snapshot_path:
+              maybe({should_have_snapshot_path :: boolean(), path :: Path.t() | nil}),
             idgen_persist_interval: maybe(integer()),
             read_only: maybe(boolean())
           }
@@ -51,5 +56,13 @@ defmodule Sled.Config do
 
   def new(options) when is_list(options) do
     new(struct(Sled.Config.Options, options))
+  end
+
+  parent = __MODULE__
+
+  defimpl Inspect do
+    def inspect(%unquote(parent){ref: ref}, _opts) do
+      "#Sled.Config<sled::" <> Sled.Native.sled_config_inspect(ref) <> ">"
+    end
   end
 end

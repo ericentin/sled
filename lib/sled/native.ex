@@ -3,6 +3,7 @@ defmodule Sled.Native do
 
   def sled_config_new(_options), do: error()
   def sled_config_open(_config), do: error()
+  def sled_config_inspect(_config), do: error()
 
   def sled_open(_db_path), do: error()
   def sled_insert(_db, _k, _v), do: error()
