@@ -1,29 +1,18 @@
 #![warn(clippy::all)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
+
+use rustler::{init, nif, resource, Atom, Env, Error, Error::BadArg, NifStruct, ResourceArc, Term};
+use sled::{Config, Db, SegmentMode};
 use std::path::PathBuf;
 
-use rustler::{
-    resource_struct_init, Encoder, Env, Error, NifStruct, OwnedBinary, ResourceArc, Term,
-};
-
-use sled::SegmentMode;
-
 mod atoms {
-    rustler::rustler_atoms! {
-        atom ok;
-        atom error;
-        atom nil;
-        atom linear;
-        atom gc;
+    rustler::atoms! {
+        ok,
+        error,
+        nil,
+        linear,
+        gc,
     }
-}
-
-struct SledConfig {
-    pub config: sled::Config,
-}
-
-struct SledDb {
-    pub db: sled::Db,
 }
 
 #[derive(NifStruct)]
@@ -40,105 +29,96 @@ struct SledConfigOptions {
     pub snapshot_after_ops: Option<u64>,
     pub segment_cleanup_threshold: Option<u8>,
     pub segment_cleanup_skew: Option<usize>,
-    pub segment_mode: rustler::Atom,
+    pub segment_mode: Atom,
     pub snapshot_path: Option<(bool, Option<String>)>,
     pub idgen_persist_interval: Option<u64>,
     pub read_only: Option<bool>,
 }
 
-rustler::rustler_export_nifs! {
-    "Elixir.Sled.Native",
-    [
-        ("sled_config_new", 1, sled_config_new),
-        ("sled_config_open", 1, sled_config_open),
-        ("sled_config_inspect", 1, sled_config_inspect),
-        ("sled_open", 1, sled_open),
-        ("sled_insert", 3, sled_insert),
-        ("sled_get", 2, sled_get)
-    ],
-    Some(on_load)
+struct SledConfig(Config);
+
+struct SledDb(Db);
+
+#[nif]
+fn sled_config_new(config_options: SledConfigOptions) -> Result<ResourceArc<SledConfig>, Error> {
+    let flush_every_ms = flush_every_ms_to_rust(config_options.flush_every_ms)?;
+    let segment_mode = segment_mode_to_rust(config_options.segment_mode)?;
+    let snapshot_path = snapshot_path_to_rust(config_options.snapshot_path)?;
+
+    let mut config = Config::new();
+
+    macro_rules! configure {
+        ($(($setter:ident, $value:expr)),+) => {{
+            $(
+                config = match $value {
+                    Some(value) => config.$setter(value),
+                    None => config
+                };
+            )*
+            config
+        }}
+    }
+
+    Ok(ResourceArc::new(SledConfig(configure!(
+        (path, config_options.path),
+        (flush_every_ms, flush_every_ms),
+        (temporary, config_options.temporary),
+        (create_new, config_options.create_new),
+        (cache_capacity, config_options.cache_capacity),
+        (print_profile_on_drop, config_options.print_profile_on_drop),
+        (use_compression, config_options.use_compression),
+        (compression_factor, config_options.compression_factor),
+        (snapshot_after_ops, config_options.snapshot_after_ops),
+        (
+            segment_cleanup_threshold,
+            config_options.segment_cleanup_threshold
+        ),
+        (segment_cleanup_skew, config_options.segment_cleanup_skew),
+        (segment_mode, segment_mode),
+        (snapshot_path, snapshot_path),
+        (
+            idgen_persist_interval,
+            config_options.idgen_persist_interval
+        ),
+        (read_only, config_options.read_only)
+    ))))
 }
 
-fn on_load(env: Env, _info: Term) -> bool {
-    resource_struct_init!(SledConfig, env);
-    resource_struct_init!(SledDb, env);
-    true
+#[nif]
+fn sled_config_open(config: ResourceArc<SledConfig>) -> Result<ResourceArc<SledDb>, Error> {
+    do_sled_open(config.0.open())
 }
 
-fn sled_config_new<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
-    let config_options: SledConfigOptions = args[0].decode()?;
-    let mut config = sled::Config::new();
-    config = set_if_configured(
-        config,
-        sled::Config::flush_every_ms,
-        flush_every_ms_to_rust(config_options.flush_every_ms)?,
-    );
-    config = set_if_configured(
-        config,
-        sled::Config::segment_mode,
-        segment_mode_to_rust(config_options.segment_mode)?,
-    );
-    config = set_if_configured(
-        config,
-        sled::Config::snapshot_path,
-        snapshot_path_to_rust(config_options.snapshot_path)?,
-    );
-    config = set_if_configured(config, sled::Config::path, config_options.path);
-    config = set_if_configured(config, sled::Config::temporary, config_options.temporary);
-    config = set_if_configured(config, sled::Config::create_new, config_options.create_new);
-    config = set_if_configured(config, sled::Config::read_only, config_options.read_only);
-    config = set_if_configured(
-        config,
-        sled::Config::cache_capacity,
-        config_options.cache_capacity,
-    );
-    config = set_if_configured(
-        config,
-        sled::Config::print_profile_on_drop,
-        config_options.print_profile_on_drop,
-    );
-    config = set_if_configured(
-        config,
-        sled::Config::use_compression,
-        config_options.use_compression,
-    );
-    config = set_if_configured(
-        config,
-        sled::Config::compression_factor,
-        config_options.compression_factor,
-    );
-    config = set_if_configured(
-        config,
-        sled::Config::snapshot_after_ops,
-        config_options.snapshot_after_ops,
-    );
-    config = set_if_configured(
-        config,
-        sled::Config::segment_cleanup_threshold,
-        config_options.segment_cleanup_threshold,
-    );
-    config = set_if_configured(
-        config,
-        sled::Config::segment_cleanup_skew,
-        config_options.segment_cleanup_skew,
-    );
-    config = set_if_configured(
-        config,
-        sled::Config::idgen_persist_interval,
-        config_options.idgen_persist_interval,
-    );
-
-    Ok(ResourceArc::new(SledConfig { config }).encode(env))
+#[nif]
+fn sled_open(path: String) -> Result<ResourceArc<SledDb>, Error> {
+    do_sled_open(sled::open(path))
 }
 
-fn set_if_configured<T>(
-    config: sled::Config,
-    setter: fn(sled::Config, T) -> sled::Config,
-    value: Option<T>,
-) -> sled::Config {
-    match value {
-        Some(value) => setter(config, value),
-        None => config,
+fn do_sled_open(result: sled::Result<Db>) -> Result<ResourceArc<SledDb>, Error> {
+    match result {
+        Ok(db) => Ok(ResourceArc::new(SledDb(db))),
+        Err(err) => wrap_err(err),
+    }
+}
+
+#[nif]
+fn sled_config_inspect(config: ResourceArc<SledConfig>) -> Result<String, Error> {
+    Ok(format!("{:?}", config.0))
+}
+
+#[nif]
+fn sled_insert(resource: ResourceArc<SledDb>, k: Vec<u8>, v: Vec<u8>) -> Result<Atom, Error> {
+    resource.0.insert(k, v).unwrap();
+
+    Ok(atoms::ok())
+}
+
+#[nif]
+fn sled_get(resource: ResourceArc<SledDb>, k: Vec<u8>) -> Result<Option<Vec<u8>>, Error> {
+    match resource.0.get(k) {
+        Ok(Some(v)) => Ok(Some(Vec::from(v.as_ref()))),
+        Ok(None) => Ok(None),
+        Err(err) => wrap_err(err),
     }
 }
 
@@ -149,18 +129,18 @@ fn flush_every_ms_to_rust(
     match value {
         Some((true, Some(ms))) => Ok(Some(Some(ms))),
         Some((false, None)) => Ok(Some(None)),
-        Some((true, None)) => Err(Error::BadArg),
-        Some((false, _)) => Err(Error::BadArg),
+        Some((true, None)) => Err(BadArg),
+        Some((false, _)) => Err(BadArg),
         None => Ok(None),
     }
 }
 
-fn segment_mode_to_rust(atom: rustler::types::Atom) -> Result<Option<SegmentMode>, Error> {
-    match atom {
+fn segment_mode_to_rust(segment_mode: Atom) -> Result<Option<SegmentMode>, Error> {
+    match segment_mode {
         atom if atom == atoms::linear() => Ok(Some(SegmentMode::Linear)),
         atom if atom == atoms::gc() => Ok(Some(SegmentMode::Gc)),
         atom if atom == atoms::nil() => Ok(None),
-        _ => Err(Error::BadArg),
+        _ => Err(BadArg),
     }
 }
 
@@ -171,63 +151,31 @@ fn snapshot_path_to_rust(
     match value {
         Some((true, Some(snapshot_path))) => Ok(Some(Some(PathBuf::from(snapshot_path)))),
         Some((false, None)) => Ok(Some(None)),
-        Some((true, None)) => Err(Error::BadArg),
-        Some((false, _)) => Err(Error::BadArg),
+        Some((true, None)) => Err(BadArg),
+        Some((false, _)) => Err(BadArg),
         None => Ok(None),
     }
 }
 
-fn sled_config_open<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
-    let config: ResourceArc<SledConfig> = args[0].decode()?;
-    do_sled_open(config.config.open(), env)
+fn wrap_err<T>(err: sled::Error) -> Result<T, Error> {
+    Err(Error::Term(Box::new(format!("{}", err))))
 }
 
-fn sled_open<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
-    let db_name: String = args[0].decode()?;
-    do_sled_open(sled::open(db_name), env)
+fn on_load(env: Env, _info: Term) -> bool {
+    resource!(SledConfig, env);
+    resource!(SledDb, env);
+    true
 }
 
-fn do_sled_open<'a>(result: sled::Result<sled::Db>, env: Env<'a>) -> Result<Term<'a>, Error> {
-    match result {
-        Ok(db) => {
-            let resource = ResourceArc::new(SledDb { db });
-            Ok((atoms::ok(), resource).encode(env))
-        }
-        Err(_) => Ok(atoms::error().encode(env)),
-    }
-}
-
-fn sled_config_inspect<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
-    let config: ResourceArc<SledConfig> = args[0].decode()?;
-    Ok(format!("{:?}", config.config).encode(env))
-}
-
-fn sled_insert<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
-    let resource: ResourceArc<SledDb> = args[0].decode()?;
-    let k: String = args[1].decode()?;
-    let v: String = args[2].decode()?;
-    resource.db.insert(k.as_bytes(), v.as_bytes()).unwrap();
-
-    Ok(atoms::ok().encode(env))
-}
-
-fn sled_get<'a>(env: Env<'a>, args: &[Term<'a>]) -> Result<Term<'a>, Error> {
-    let resource: ResourceArc<SledDb> = args[0].decode()?;
-    let k: String = args[1].decode()?;
-    match resource.db.get(k.as_bytes()) {
-        Ok(Some(v)) => Ok((atoms::ok(), SledIVec(v)).encode(env)),
-        Ok(None) => Ok((atoms::ok(), atoms::nil()).encode(env)),
-        Err(_inner) => Ok(atoms::error().encode(env)),
-    }
-}
-
-struct SledIVec(sled::IVec);
-
-impl Encoder for SledIVec {
-    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
-        let len = self.0.len();
-        let mut bin = OwnedBinary::new(len).unwrap();
-        bin.as_mut_slice().copy_from_slice(self.0.as_ref());
-        bin.release(env).to_term(env)
-    }
+init! {
+    "Elixir.Sled.Native",
+    [
+        sled_config_new,
+        sled_config_open,
+        sled_config_inspect,
+        sled_open,
+        sled_insert,
+        sled_get
+    ],
+    load = on_load
 }

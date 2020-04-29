@@ -31,7 +31,7 @@ defmodule Sled.MixProject do
 
   defp deps do
     [
-      {:rustler, "~> 0.21.0"},
+      {:rustler, "~> 0.22.0-rc.0"},
       {:ex_doc, "~> 0.14", only: :dev, runtime: false}
     ]
   end
