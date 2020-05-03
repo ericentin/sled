@@ -1,15 +1,15 @@
 #![warn(clippy::all)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
-use rustler::{init, nif, resource, Atom, Env, Error, Error::BadArg, NifStruct, ResourceArc, Term};
+use rustler::{
+    init, nif, resource, types::atom, Atom, Binary, Env, Error, Error::BadArg, NifStruct,
+    OwnedBinary, ResourceArc, Term,
+};
 use sled::{Config, Db, SegmentMode};
 use std::path::PathBuf;
 
 mod atoms {
     rustler::atoms! {
-        ok,
-        error,
-        nil,
         linear,
         gc,
     }
@@ -84,19 +84,21 @@ fn sled_config_new(config_options: SledConfigOptions) -> Result<ResourceArc<Sled
     ))))
 }
 
-#[nif]
-fn sled_config_open(config: ResourceArc<SledConfig>) -> Result<ResourceArc<SledDb>, Error> {
+#[cfg_attr(feature = "io_uring", nif)]
+#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+fn sled_config_open(config: ResourceArc<SledConfig>) -> Result<(Atom, ResourceArc<SledDb>), Error> {
     do_sled_open(config.0.open())
 }
 
-#[nif]
-fn sled_open(path: String) -> Result<ResourceArc<SledDb>, Error> {
+#[cfg_attr(feature = "io_uring", nif)]
+#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+fn sled_open(path: String) -> Result<(Atom, ResourceArc<SledDb>), Error> {
     do_sled_open(sled::open(path))
 }
 
-fn do_sled_open(result: sled::Result<Db>) -> Result<ResourceArc<SledDb>, Error> {
+fn do_sled_open(result: sled::Result<Db>) -> Result<(Atom, ResourceArc<SledDb>), Error> {
     match result {
-        Ok(db) => Ok(ResourceArc::new(SledDb(db))),
+        Ok(db) => Ok((atom::ok(), ResourceArc::new(SledDb(db)))),
         Err(err) => wrap_err(err),
     }
 }
@@ -106,18 +108,33 @@ fn sled_config_inspect(config: ResourceArc<SledConfig>) -> Result<String, Error>
     Ok(format!("{:?}", config.0))
 }
 
-#[nif]
-fn sled_insert(resource: ResourceArc<SledDb>, k: Vec<u8>, v: Vec<u8>) -> Result<Atom, Error> {
-    resource.0.insert(k, v).unwrap();
+#[cfg_attr(feature = "io_uring", nif)]
+#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+fn sled_insert(resource: ResourceArc<SledDb>, k: Binary, v: Binary) -> Result<Atom, Error> {
+    resource.0.insert(k.as_slice(), v.as_slice()).unwrap();
 
-    Ok(atoms::ok())
+    Ok(atom::ok())
 }
 
-#[nif]
-fn sled_get(resource: ResourceArc<SledDb>, k: Vec<u8>) -> Result<Option<Vec<u8>>, Error> {
-    match resource.0.get(k) {
-        Ok(Some(v)) => Ok(Some(Vec::from(v.as_ref()))),
-        Ok(None) => Ok(None),
+#[cfg_attr(feature = "io_uring", nif)]
+#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+fn sled_get<'a>(
+    env: Env<'a>,
+    resource: ResourceArc<SledDb>,
+    k: Binary,
+) -> Result<(Atom, Option<Binary<'a>>), Error> {
+    let SledDb(db) = &*resource;
+    match db.get(k.as_slice()) {
+        Ok(Some(v)) => match OwnedBinary::new(v.len()) {
+            Some(mut owned_binary) => {
+                owned_binary.as_mut_slice().copy_from_slice(v.as_ref());
+                Ok((atom::ok(), Some(owned_binary.release(env))))
+            }
+            None => Err(Error::Term(Box::new(
+                "Failed to allocated OwnedBinary for result value.",
+            ))),
+        },
+        Ok(None) => Ok((atom::ok(), None)),
         Err(err) => wrap_err(err),
     }
 }
@@ -139,7 +156,7 @@ fn segment_mode_to_rust(segment_mode: Atom) -> Result<Option<SegmentMode>, Error
     match segment_mode {
         atom if atom == atoms::linear() => Ok(Some(SegmentMode::Linear)),
         atom if atom == atoms::gc() => Ok(Some(SegmentMode::Gc)),
-        atom if atom == atoms::nil() => Ok(None),
+        atom if atom == atom::nil() => Ok(None),
         _ => Err(BadArg),
     }
 }
