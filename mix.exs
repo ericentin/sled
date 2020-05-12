@@ -11,7 +11,12 @@ defmodule Sled.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       compilers: [:rustler] ++ Mix.compilers(),
-      rustler_crates: [sled_nif: [mode: rustc_mode(Mix.env())]],
+      rustler_crates: [
+        sled_nif: [
+          mode: rustc_mode(Mix.env()),
+          features: features()
+        ]
+      ],
       description: description(),
       package: package(),
       source_url: "https://github.com/ericentin/sled",
@@ -62,4 +67,11 @@ defmodule Sled.MixProject do
 
   defp rustc_mode(:prod), do: :release
   defp rustc_mode(_), do: :debug
+
+  defp features() do
+    case :os.type() do
+      {:unix, :linux} -> []
+      _ -> []
+    end
+  end
 end
