@@ -10,9 +10,9 @@ https://github.com/spacejam/sled
 
   Example
 
-      {:ok, db} = Sled.open("my_db")
-      :ok = Sled.insert(db, "hello", "world")
-      {:ok, "world"} = Sled.get(db, "hello")
+      db = Sled.open!("my_db")
+      :ok = Sled.insert!(db, "hello", "world")
+      "world" = Sled.get!(db, "hello")
 
 ## Installation
 
@@ -22,7 +22,7 @@ by adding `sled` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:sled, "~> 0.1.0-alpha"}
+    {:sled, "~> 0.1.0-alpha.1"}
   ]
 end
 ```

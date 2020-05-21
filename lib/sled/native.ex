@@ -1,4 +1,6 @@
 defmodule Sled.Native do
+  @moduledoc false
+
   use Rustler, otp_app: :sled, crate: :sled_nif
 
   def sled_config_new(_options), do: error()

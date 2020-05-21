@@ -16,53 +16,64 @@ defmodule Sled.Config do
               idgen_persist_interval: nil,
               read_only: nil
 
-    @type maybe(type) :: type | nil
-
     @typedoc """
-    `flush_every_ms` note: if `should_flush` is false, `ms` should be `nil`.
-    `snapshot_path` note: if `should_have_snapshot_path` is false, `path` should be `nil`.
+    Sled configuration parameters.
+
+    For more info, refer to https://docs.rs/sled/0.31/sled/struct.Config.html#methods.
     """
     @type t :: %__MODULE__{
-            path: maybe(Path.t()),
-            flush_every_ms: maybe({should_flush :: boolean(), ms :: integer() | nil}),
-            temporary: maybe(boolean()),
-            create_new: maybe(boolean()),
-            cache_capacity: maybe(integer()),
-            print_profile_on_drop: maybe(boolean()),
-            use_compression: maybe(boolean()),
-            compression_factor: maybe(integer()),
-            snapshot_after_ops: maybe(integer()),
-            segment_cleanup_threshold: maybe(integer()),
-            segment_cleanup_skew: maybe(integer()),
-            segment_mode: maybe(:gc | :linear),
-            snapshot_path:
-              maybe({should_have_snapshot_path :: boolean(), path :: Path.t() | nil}),
-            idgen_persist_interval: maybe(integer()),
-            read_only: maybe(boolean())
+            path: Path.t() | nil,
+            flush_every_ms: integer() | false | nil,
+            temporary: boolean() | nil,
+            create_new: boolean() | nil,
+            cache_capacity: integer() | nil,
+            print_profile_on_drop: boolean() | nil,
+            use_compression: boolean() | nil,
+            compression_factor: integer() | nil,
+            snapshot_after_ops: integer() | nil,
+            segment_cleanup_threshold: integer() | nil,
+            segment_cleanup_skew: integer() | nil,
+            segment_mode: :gc | :linear | nil,
+            snapshot_path: Path.t() | false | nil,
+            idgen_persist_interval: integer() | nil,
+            read_only: boolean() | nil
           }
   end
 
-  @opaque t :: %__MODULE__{ref: reference()}
-
-  @doc false
+  @enforce_keys [:ref]
   defstruct ref: nil
 
-  @spec new(Sled.Config.Options.t() | keyword()) :: Sled.Config.t()
-  def new(options \\ %Options{})
+  @typedoc """
+  A handle to a cached Sled config.
+  """
+  @opaque t :: %__MODULE__{ref: reference()}
 
-  def new(%Options{} = options) do
-    %__MODULE__{ref: Sled.Native.sled_config_new(options)}
+  @doc """
+  Create a Sled config that you can use with `open/1`.
+
+  Raises a `Sled.Error` if s
+  """
+  @spec new!(keyword | Options.t()) :: t
+  def new!(options \\ %Options{})
+
+  def new!(options) when is_list(options) do
+    new!(struct!(Sled.Config.Options, options))
   end
 
-  def new(options) when is_list(options) do
-    new(struct(Sled.Config.Options, options))
+  def new!(options) do
+    Sled.Native.sled_config_new(options)
+  end
+
+  @spec open!(t) :: Sled.t()
+  def open!(config) do
+    Sled.Native.sled_config_open(config)
   end
 
   parent = __MODULE__
 
   defimpl Inspect do
-    def inspect(%unquote(parent){ref: ref}, _opts) do
-      "#Sled.Config<sled::" <> Sled.Native.sled_config_inspect(ref) <> ">"
+    def inspect(%unquote(parent){} = config, _opts) do
+      "#Sled.Config<sled::" <> Sled.Native.sled_config_inspect(config) <> ">"
     end
   end
 end

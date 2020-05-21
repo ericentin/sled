@@ -4,36 +4,60 @@ defmodule Sled do
 
   Example
 
-      {:ok, db} = Sled.open("my_db")
-      :ok = Sled.insert(db, "hello", "world")
-      {:ok, "world"} = Sled.get(db, "hello")
+      db = Sled.open!("my_db")
+      :ok = Sled.insert!(db, "hello", "world")
+      "world" = Sled.get!(db, "hello")
   """
 
-  @doc """
-  Open the db at `db_path`.
+  @enforce_keys [:ref]
+  defstruct ref: nil
+
+  @typedoc """
+  A handle to a Sled DB.
   """
-  def open(db_path) when is_binary(db_path) do
-    Sled.Native.sled_open(db_path)
+  @opaque t :: %__MODULE__{ref: reference()}
+
+  defmodule Error do
+    defexception [:message]
   end
 
   @doc """
-  Open the db as configured in `config`.
+  Open the db with `options`, by default creating it if it doesn't exist.
+
+  If `options` is a path, opens the db at the path with default options, creating it if it doesn't exist.
+
+  Raises a `Sled.Error` if it fails.
   """
-  def open(%Sled.Config{ref: ref}) do
-    Sled.Native.sled_config_open(ref)
+  @spec open!(Path.t() | keyword) :: t
+  def open!(options) when is_binary(options) do
+    Sled.Native.sled_open(options)
+  end
+
+  def open!(options) when is_list(options) do
+    options
+    |> Sled.Config.new!()
+    |> Sled.Config.open!()
   end
 
   @doc """
-  Insert into db `db` key `k` and value `v`.
+  Insert into `db` key `k` and value `v`.
+
+  Raises a `Sled.Error` if it fails.
   """
-  def insert(db, k, v) do
+  @spec insert!(t, binary, binary) :: :ok
+  def insert!(db, k, v) do
     Sled.Native.sled_insert(db, k, v)
   end
 
   @doc """
-  Get from db `db` key `k` and value `v`.
+  From `db`, retrieve the value for key `k`.
+
+  Returns `nil` if there is no value associated with the key.
+
+  Raises a `Sled.Error` if it fails.
   """
-  def get(db, k) do
+  @spec get!(t, binary) :: binary | nil
+  def get!(db, k) do
     Sled.Native.sled_get(db, k)
   end
 end

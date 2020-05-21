@@ -1,8 +1,11 @@
 [package]
 name = "sled_nif"
-version = "0.1.0-alpha"
+version = "0.1.0-alpha.1"
 authors = []
 edition = "2018"
+
+[features]
+io_uring = ["sled/io_uring"]
 
 [lib]
 name = "sled_nif"
