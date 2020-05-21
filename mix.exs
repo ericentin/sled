@@ -107,6 +107,7 @@ defmodule Sled.MixProject do
         end
       end
 
+      # Test if rio nop works, if it doesn't the kernel doesn't support io_uring
       case System.cmd(rio_nop_path, [], stderr_to_stdout: true) do
         {_stdout, 0} ->
           ["io_uring"]
