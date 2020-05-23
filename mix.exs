@@ -70,27 +70,26 @@ defmodule Sled.MixProject do
   defp rustc_mode(:prod), do: :release
   defp rustc_mode(_), do: :debug
 
-  features =
-    try do
-      # If not linux, big nope
-      if :os.type() != {:unix, :linux}, do: throw([])
+  def features do
+    if Application.get_env(:sled, :io_uring) do
+      ["io_uring"]
+    else
+      try do
+        # If not linux, big nope
+        if :os.type() != {:unix, :linux}, do: throw([])
 
-      # If cargo isn't installed, let rustler handle it, we'll recalculate features later
-      if !(cargo = System.find_executable("cargo")), do: throw([])
+        # If cargo isn't installed, let rustler handle it, we'll recalculate features later
+        if !(cargo = System.find_executable("cargo")), do: throw([])
 
-      native_path = Path.join(__DIR__, "native")
-      rio_nop_root_path = Path.join(native_path, "rio_nop")
-      rio_nop_path = Path.join([rio_nop_root_path, "bin", "nop"])
-
-      # Install rio nop if needed
-      unless File.exists?(rio_nop_path) do
-        case System.cmd(
-               cargo,
-               ~w[install rio --example nop --root #{rio_nop_root_path}],
-               stderr_to_stdout: true
+        case System.cmd(cargo, ["run"],
+               stderr_to_stdout: true,
+               cd: Path.join([__DIR__, "native", "io_uring_test"])
              ) do
-          {_, 0} ->
-            :ok
+          {_stdout, 0} ->
+            ["io_uring"]
+
+          {_, 1} ->
+            []
 
           {stdout, exit_status} ->
             Mix.Shell.IO.error([
@@ -103,40 +102,11 @@ defmodule Sled.MixProject do
               "exited with status: #{exit_status}"
             ])
 
-            throw([])
+            []
         end
+      catch
+        [] -> []
       end
-
-      # Test if rio nop works, if it doesn't the kernel doesn't support io_uring
-      case System.cmd(rio_nop_path, [], stderr_to_stdout: true) do
-        {_stdout, 0} ->
-          ["io_uring"]
-
-        {_, 101} ->
-          []
-
-        {stdout, exit_status} ->
-          Mix.Shell.IO.error([
-            """
-            Unexpected error determining if io_uring should be enabled.
-            Please open an issue at #{@sled_github_url} and include the following log. Thanks!
-            stdout:
-            """,
-            stdout,
-            "exited with status: #{exit_status}"
-          ])
-
-          []
-      end
-    catch
-      [] -> []
-    end
-
-  def features do
-    if Application.get_env(:sled, :io_uring) do
-      ["io_uring"]
-    else
-      unquote(features)
     end
   end
 end

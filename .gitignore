@@ -22,12 +22,11 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 sled-*.tar
 
-/Cargo.lock
-/target
-
 /native/sled_nif/Cargo.lock
 /native/sled_nif/target
-/native/rio_nop
+
+/native/io_uring_test/Cargo.lock
+/native/io_uring_test/target
 
 /priv/native
 
