@@ -71,42 +71,48 @@ defmodule Sled.MixProject do
   defp rustc_mode(_), do: :debug
 
   def features do
-    if Application.get_env(:sled, :io_uring) do
+    if Application.get_env(:sled, :io_uring, false) or io_uring_supported?() do
       ["io_uring"]
     else
-      try do
-        # If not linux, big nope
-        if :os.type() != {:unix, :linux}, do: throw([])
+      []
+    end
+  end
 
-        # If cargo isn't installed, let rustler handle it, we'll recalculate features later
-        if !(cargo = System.find_executable("cargo")), do: throw([])
+  defp io_uring_supported?() do
+    Enum.all?([&is_linux?/0, &cargo_present?/0, &io_uring_test_success?/0], & &1.())
+  end
 
-        case System.cmd(cargo, ["run"],
-               stderr_to_stdout: true,
-               cd: Path.join([__DIR__, "native", "io_uring_test"])
-             ) do
-          {_stdout, 0} ->
-            ["io_uring"]
+  defp is_linux? do
+    :os.type() != {:unix, :linux}
+  end
 
-          {_, 1} ->
-            []
+  defp cargo_present? do
+    System.find_executable("cargo")
+  end
 
-          {stdout, exit_status} ->
-            Mix.Shell.IO.error([
-              """
-              Unexpected error determining if io_uring should be enabled.
-              Please open an issue at #{@sled_github_url} and include the following log. Thanks!
-              stdout:
-              """,
-              stdout,
-              "exited with status: #{exit_status}"
-            ])
+  defp io_uring_test_success? do
+    case System.cmd("cargo", ["run"],
+           stderr_to_stdout: true,
+           cd: Path.join([__DIR__, "native", "io_uring_test"])
+         ) do
+      {_, 0} ->
+        true
 
-            []
-        end
-      catch
-        [] -> []
-      end
+      {_, 1} ->
+        false
+
+      {stdout, exit_status} ->
+        Mix.Shell.IO.error([
+          """
+          Unexpected error determining if io_uring should be enabled.
+          Please open an issue at #{@sled_github_url} and include the following log. Thanks!
+          stdout:
+          """,
+          stdout,
+          "exited with status: #{exit_status}"
+        ])
+
+        false
     end
   end
 end
