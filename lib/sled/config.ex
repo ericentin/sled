@@ -64,6 +64,9 @@ defmodule Sled.Config do
     Sled.Native.sled_config_new(options)
   end
 
+  @doc """
+  Open the Sled database for the `config`.
+  """
   @spec open!(t) :: Sled.t()
   def open!(config) do
     Sled.Native.sled_config_open(config)
@@ -72,6 +75,7 @@ defmodule Sled.Config do
   parent = __MODULE__
 
   defimpl Inspect do
+    @impl true
     def inspect(%unquote(parent){} = config, _opts) do
       "#Sled.Config<sled::" <> Sled.Native.sled_config_inspect(config) <> ">"
     end
