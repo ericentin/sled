@@ -102,17 +102,21 @@ defmodule Sled.MixProject do
         false
 
       {stdout, exit_status} ->
-        Mix.Shell.IO.error([
-          """
-          Unexpected error determining if io_uring should be enabled.
-          Please open an issue at #{@sled_github_url} and include the following log. Thanks!
-          stdout:
-          """,
-          stdout,
-          "exited with status: #{exit_status}"
-        ])
+        io_uring_detection_error(stdout, exit_status)
 
         false
     end
+  end
+
+  defp io_uring_detection_error(stdout, exit_status) do
+    Mix.Shell.IO.error([
+      """
+      Unexpected error determining if io_uring should be enabled.
+      Please open an issue at #{@sled_github_url} and include the following log. Thanks!
+      stdout:
+      """,
+      stdout,
+      "exited with status: #{exit_status}"
+    ])
   end
 end
