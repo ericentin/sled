@@ -54,6 +54,8 @@ defmodule Sled.MixProject do
         "native/sled_nif/.cargo",
         "native/sled_nif/src",
         "native/sled_nif/Cargo.toml",
+        "native/io_uring_test/src",
+        "native/io_uring_test/Cargo.toml",
         ".formatter.exs",
         "mix.exs",
         "README.md"
