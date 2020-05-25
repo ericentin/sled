@@ -1,63 +1,68 @@
 defmodule Sled do
   @moduledoc """
-  An Elixir binding for sled, the champagne of beta embedded databases.
+  An Elixir binding for [sled](https://github.com/spacejam/sled), the champagne of beta embedded databases.
 
-  Example
+  A basic example:
 
-      db = Sled.open!("my_db")
-      :ok = Sled.insert!(db, "hello", "world")
-      "world" = Sled.get!(db, "hello")
+      iex> db = Sled.open("my_db")
+      iex> Sled.insert(db, "hello", "world")
+      iex> Sled.get(db, "hello")
+      "world"
   """
 
   @enforce_keys [:ref]
   defstruct ref: nil
 
   @typedoc """
-  A handle to a Sled DB.
+  A handle to a sled db.
   """
   @opaque t :: %__MODULE__{ref: reference()}
-
-  defmodule Error do
-    defexception [:message]
-  end
 
   @doc """
   Open the db with `options`, by default creating it if it doesn't exist.
 
-  If `options` is a path, opens the db at the path with default options, creating it if it doesn't exist.
+  If `options` is a path, opens the db at the path with default options, creating it if it doesn't exist:
 
-  Raises a `Sled.Error` if it fails.
+      iex> Sled.open("my_db")
+
+  If `options` is a keyword or `Sled.Config.Options` struct, then this function is the same as calling
+  `Sled.Config.new/1` and passing the result to `Sled.Config.open/1`.
   """
-  @spec open!(Path.t() | keyword) :: t
-  def open!(options) when is_binary(options) do
+  @spec open(Path.t() | keyword | Sled.Config.Options.t()) :: t | no_return
+  def open(options) when is_binary(options) do
     Sled.Native.sled_open(options)
   end
 
-  def open!(options) when is_list(options) do
+  def open(options) do
     options
-    |> Sled.Config.new!()
-    |> Sled.Config.open!()
+    |> Sled.Config.new()
+    |> Sled.Config.open()
   end
 
   @doc """
-  Insert into `db` key `k` and value `v`.
+  Insert `value` into `db` for `key`.
 
-  Raises a `Sled.Error` if it fails.
+  Returns `nil` if there was no previous value associated with the key.
   """
-  @spec insert!(t, binary, binary) :: :ok
-  def insert!(db, k, v) do
-    Sled.Native.sled_insert(db, k, v)
+  @spec insert(t, binary, binary) :: binary | nil | no_return
+  def insert(db, key, value) do
+    Sled.Native.sled_insert(db, key, value)
   end
 
   @doc """
-  From `db`, retrieve the value for key `k`.
+  Retrieve the value for `key` from `db`.
 
   Returns `nil` if there is no value associated with the key.
-
-  Raises a `Sled.Error` if it fails.
   """
-  @spec get!(t, binary) :: binary | nil
-  def get!(db, k) do
-    Sled.Native.sled_get(db, k)
+  @spec get(t, binary) :: binary | nil | no_return
+  def get(db, key) do
+    Sled.Native.sled_get(db, key)
+  end
+
+  defimpl Inspect do
+    @impl true
+    def inspect(%Sled{}, _opts) do
+      "#Sled<>"
+    end
   end
 end

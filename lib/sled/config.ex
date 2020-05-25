@@ -1,5 +1,9 @@
 defmodule Sled.Config do
+  @moduledoc "Configuration for sled."
+
   defmodule Options do
+    @moduledoc "Defines a struct for `Sled.Config` options."
+
     defstruct path: nil,
               flush_every_ms: nil,
               temporary: nil,
@@ -17,7 +21,7 @@ defmodule Sled.Config do
               read_only: nil
 
     @typedoc """
-    Sled configuration parameters.
+    sled configuration options.
 
     For more info, refer to https://docs.rs/sled/0.31/sled/struct.Config.html#methods.
     """
@@ -44,31 +48,41 @@ defmodule Sled.Config do
   defstruct ref: nil
 
   @typedoc """
-  A handle to a cached Sled config.
+  A handle to a cached sled config.
   """
   @opaque t :: %__MODULE__{ref: reference()}
 
   @doc """
-  Create a Sled config that you can use with `open/1`.
+  Create a sled config for `options`.
 
-  Raises a `Sled.Error` if s
+  You can pass keyword arguments:
+
+      iex> Sled.Config.new(path: "my_db")
+
+  or, you can use the `Sled.Config.Options` struct, if you prefer:
+
+      iex> Sled.Config.new(%Sled.Config.Options{path: "my_db"})
   """
-  @spec new!(keyword | Options.t()) :: t
-  def new!(options \\ %Options{})
+  @spec new(keyword | Options.t()) :: t | no_return
+  def new(options \\ %Options{})
 
-  def new!(options) when is_list(options) do
-    new!(struct!(Sled.Config.Options, options))
+  def new(options) when is_list(options) do
+    new(struct!(Sled.Config.Options, options))
   end
 
-  def new!(options) do
+  def new(%Sled.Config.Options{} = options) do
     Sled.Native.sled_config_new(options)
   end
 
   @doc """
-  Open the Sled database for the `config`.
+  Open the sled database for the given `config`.
+
+      iex> config = Sled.Config.new(path: "my_db")
+      iex> Sled.Config.open(config)
+      #Sled<>
   """
-  @spec open!(t) :: Sled.t()
-  def open!(config) do
+  @spec open(t) :: Sled.t() | no_return
+  def open(config) do
     Sled.Native.sled_config_open(config)
   end
 

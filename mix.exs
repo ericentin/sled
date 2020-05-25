@@ -42,7 +42,7 @@ defmodule Sled.MixProject do
   end
 
   defp description do
-    "An Elixir binding for Sled, the champagne of beta embedded databases."
+    "An Elixir binding for sled, the champagne of beta embedded databases."
   end
 
   @sled_github_url "https://github.com/ericentin/sled"
@@ -62,7 +62,7 @@ defmodule Sled.MixProject do
       licenses: ["Apache-2.0", "MIT"],
       links: %{
         "GitHub" => @sled_github_url,
-        "Sled" => "https://github.com/spacejam/sled"
+        "sled" => "https://github.com/spacejam/sled"
       }
     ]
   end
