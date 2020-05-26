@@ -81,7 +81,7 @@ defmodule Sled.MixProject do
   end
 
   defp io_uring_supported?() do
-    Enum.all?([&is_linux?/0, &cargo_present?/0, &io_uring_test_success?/0], & &1.())
+    is_linux?() and cargo_present?() and io_uring_test_success?()
   end
 
   defp is_linux? do
@@ -89,7 +89,7 @@ defmodule Sled.MixProject do
   end
 
   defp cargo_present? do
-    System.find_executable("cargo")
+    not is_nil(System.find_executable("cargo"))
   end
 
   defp io_uring_test_success? do
