@@ -85,7 +85,7 @@ defmodule Sled.MixProject do
   end
 
   defp is_linux? do
-    :os.type() != {:unix, :linux}
+    :os.type() == {:unix, :linux}
   end
 
   defp cargo_present? do
