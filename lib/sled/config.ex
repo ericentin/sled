@@ -57,11 +57,11 @@ defmodule Sled.Config do
 
   You can pass keyword arguments:
 
-      iex> Sled.Config.new(path: "my_keyword_config_db")
+      iex> Sled.Config.new(path: "test_keyword_config_db")
 
   or, you can use the `Sled.Config.Options` struct, if you prefer:
 
-      iex> Sled.Config.new(%Sled.Config.Options{path: "my_struct_config_db"})
+      iex> Sled.Config.new(%Sled.Config.Options{path: "test_struct_config_db"})
   """
   @spec new(keyword | Options.t()) :: t | no_return
   def new(options \\ %Options{})
@@ -77,9 +77,9 @@ defmodule Sled.Config do
   @doc """
   Open the sled database for the given `config`.
 
-      iex> config = Sled.Config.new(path: "my_config_db")
+      iex> config = Sled.Config.new(path: "test_config_db")
       iex> Sled.Config.open(config)
-      #Sled<path: "my_config_db">
+      #Sled<path: "test_config_db">
   """
   @spec open(t) :: Sled.t() | no_return
   def open(config) do

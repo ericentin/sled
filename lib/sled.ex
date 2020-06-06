@@ -4,7 +4,7 @@ defmodule Sled do
 
   A basic example:
 
-      iex> db = Sled.open("my_db")
+      iex> db = Sled.open("test_db")
       iex> Sled.insert(db, "hello", "world")
       iex> Sled.get(db, "hello")
       "world"
@@ -23,7 +23,7 @@ defmodule Sled do
 
   If `options` is a path, opens the db at the path with default options, creating it if it doesn't exist:
 
-      iex> Sled.open("my_default_db")
+      iex> Sled.open("test_default_db")
 
   If `options` is a keyword or `Sled.Config.Options` struct, then this function is the same as calling
   `Sled.Config.new/1` and passing the result to `Sled.Config.open/1`.

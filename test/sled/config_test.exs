@@ -2,6 +2,12 @@ defmodule Sled.ConfigTest do
   use ExUnit.Case
   doctest Sled.Config
 
+  setup_all do
+    on_exit(fn ->
+      File.rm_rf!("test_config_db")
+    end)
+  end
+
   test "config inspect" do
     assert inspect(Sled.Config.new()) =~ ~r/#Sled\.Config<sled::Config\(.*\)>/
   end
@@ -29,7 +35,7 @@ defmodule Sled.ConfigTest do
   end
 
   test "config snapshot_path" do
-    assert_configured(:snapshot_path, "my_snapshot_path", "Some(\"my_snapshot_path\")")
+    assert_configured(:snapshot_path, "test_snapshot_path", "Some(\"test_snapshot_path\")")
     assert_configured(:snapshot_path, false, "None")
 
     assert_configure_raises(

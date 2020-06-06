@@ -2,6 +2,13 @@ defmodule SledTest do
   use ExUnit.Case
   doctest Sled
 
+  setup_all do
+    on_exit(fn ->
+      File.rm_rf!("test_db")
+      File.rm_rf!("test_default_db")
+    end)
+  end
+
   setup do
     path = Sled.TestHelpers.test_db_name()
     File.rm_rf!(path)

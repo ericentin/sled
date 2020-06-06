@@ -14,11 +14,11 @@ defmodule Sled.TreeTest do
   end
 
   test "open tree", context do
-    assert %Sled.Tree{} = Sled.Tree.open(context.db, "my_tree")
+    assert %Sled.Tree{} = Sled.Tree.open(context.db, "test_tree")
   end
 
   test "tree inspect" do
     assert db = %Sled{} = Sled.open(Sled.TestHelpers.test_db_name())
-    assert "#Sled.Tree<name: \"my_tree\">" = inspect(Sled.Tree.open(db, "my_tree"))
+    assert "#Sled.Tree<name: \"test_tree\">" = inspect(Sled.Tree.open(db, "test_tree"))
   end
 end
