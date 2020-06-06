@@ -3,15 +3,24 @@ defmodule SledTest do
   doctest Sled
 
   setup do
-    path = Path.join(System.tmp_dir!(), "SledTestDbDoNotUse")
-    File.rm_rf(path)
+    path = Sled.TestHelpers.test_db_name()
+    File.rm_rf!(path)
+
+    on_exit(fn ->
+      File.rm_rf!(path)
+    end)
+
     {:ok, path: path}
   end
 
   test "open db_path", context do
-    assert "#Sled<>" == inspect(Sled.open(context.path))
+    assert %Sled{} = Sled.open(context.path)
 
     assert File.exists?(context.path)
+  end
+
+  test "db inspect", context do
+    assert inspect(Sled.open(context.path)) =~ ~r/#Sled<path: ".*TestDbDoNotUse.*">/
   end
 
   test "open invalid db_path" do

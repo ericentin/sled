@@ -10,20 +10,20 @@ defmodule Sled do
       "world"
   """
 
-  @enforce_keys [:ref]
-  defstruct ref: nil
+  @enforce_keys [:ref, :path]
+  defstruct ref: nil, path: nil
 
   @typedoc """
   A handle to a sled db.
   """
-  @opaque t :: %__MODULE__{ref: reference()}
+  @opaque t :: %__MODULE__{ref: reference(), path: binary()}
 
   @doc """
   Open the db with `options`, by default creating it if it doesn't exist.
 
   If `options` is a path, opens the db at the path with default options, creating it if it doesn't exist:
 
-      iex> Sled.open("my_db")
+      iex> Sled.open("my_default_db")
 
   If `options` is a keyword or `Sled.Config.Options` struct, then this function is the same as calling
   `Sled.Config.new/1` and passing the result to `Sled.Config.open/1`.
@@ -59,10 +59,12 @@ defmodule Sled do
     Sled.Native.sled_get(db, key)
   end
 
+  parent = __MODULE__
+
   defimpl Inspect do
     @impl true
-    def inspect(%Sled{}, _opts) do
-      "#Sled<>"
+    def inspect(%unquote(parent){} = db, _opts) do
+      "##{unquote(inspect(parent))}<path: \"#{db.path}\">"
     end
   end
 end

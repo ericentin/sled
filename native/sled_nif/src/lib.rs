@@ -8,7 +8,7 @@ use rustler::{
     NifUntaggedEnum, OwnedBinary, ResourceArc, Term,
 };
 
-use sled::{Config, Db, IVec};
+use sled::{Config, Db, IVec, Tree};
 
 mod atoms {
     rustler::atoms! {
@@ -151,26 +151,53 @@ struct SledDbArc(Db);
 
 #[derive(NifStruct)]
 #[module = "Sled"]
-struct Sled {
+struct SledDb {
     pub r#ref: ResourceArc<SledDbArc>,
+    pub path: String,
 }
 
 #[cfg_attr(feature = "io_uring", nif)]
 #[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
-fn sled_config_open(config: SledConfig) -> Result<Sled, Error> {
-    do_sled_open(config.r#ref.0.open())
+fn sled_config_open(config: SledConfig) -> Result<SledDb, Error> {
+    let path = String::from(match config.r#ref.0.path.to_str() {
+        Some(path) => path,
+        None => "non utf-8 path",
+    });
+    do_sled_open(config.r#ref.0.open(), &path)
 }
 
 #[cfg_attr(feature = "io_uring", nif)]
 #[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
-fn sled_open(path: String) -> Result<Sled, Error> {
-    do_sled_open(sled::open(path))
+fn sled_open(path: String) -> Result<SledDb, Error> {
+    do_sled_open(sled::open(path.clone()), &path)
 }
 
-fn do_sled_open(result: sled::Result<Db>) -> Result<Sled, Error> {
+fn do_sled_open(result: sled::Result<Db>, path: &str) -> Result<SledDb, Error> {
     match result {
-        Ok(db) => Ok(Sled {
+        Ok(db) => Ok(SledDb {
             r#ref: ResourceArc::new(SledDbArc(db)),
+            path: String::from(path),
+        }),
+        Err(err) => wrap_sled_err(err),
+    }
+}
+
+struct SledTreeArc(Tree);
+
+#[derive(NifStruct)]
+#[module = "Sled.Tree"]
+struct SledTree {
+    pub r#ref: ResourceArc<SledTreeArc>,
+    pub name: String,
+}
+
+#[cfg_attr(feature = "io_uring", nif)]
+#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+fn sled_tree_open(resource: SledDb, name: String) -> Result<SledTree, Error> {
+    match resource.r#ref.0.open_tree(name.clone()) {
+        Ok(tree) => Ok(SledTree {
+            r#ref: ResourceArc::new(SledTreeArc(tree)),
+            name,
         }),
         Err(err) => wrap_sled_err(err),
     }
@@ -180,17 +207,17 @@ fn do_sled_open(result: sled::Result<Db>) -> Result<Sled, Error> {
 #[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
 fn sled_insert<'a>(
     env: Env<'a>,
-    resource: Sled,
+    resource: SledDb,
     k: Binary,
     v: Binary,
 ) -> Result<Option<Binary<'a>>, Error> {
-    ivec_to_binary(env, resource.r#ref.0.insert(k.as_slice(), v.as_slice()))
+    ivec_to_binary(env, resource.r#ref.0.insert(&k[..], &v[..]))
 }
 
 #[cfg_attr(feature = "io_uring", nif)]
 #[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
-fn sled_get<'a>(env: Env<'a>, resource: Sled, k: Binary) -> Result<Option<Binary<'a>>, Error> {
-    ivec_to_binary(env, resource.r#ref.0.get(k.as_slice()))
+fn sled_get<'a>(env: Env<'a>, resource: SledDb, k: Binary) -> Result<Option<Binary<'a>>, Error> {
+    ivec_to_binary(env, resource.r#ref.0.get(&k[..]))
 }
 
 fn ivec_to_binary(env: Env, r: Result<Option<IVec>, sled::Error>) -> Result<Option<Binary>, Error> {
@@ -220,6 +247,7 @@ fn wrap_err<T>(err: String) -> Result<T, Error> {
 fn on_load(env: Env, _info: Term) -> bool {
     resource!(SledConfigArc, env);
     resource!(SledDbArc, env);
+    resource!(SledTreeArc, env);
     true
 }
 
@@ -230,6 +258,7 @@ init! {
         sled_config_open,
         sled_config_inspect,
         sled_open,
+        sled_tree_open,
         sled_insert,
         sled_get
     ],

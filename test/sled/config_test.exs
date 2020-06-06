@@ -2,6 +2,10 @@ defmodule Sled.ConfigTest do
   use ExUnit.Case
   doctest Sled.Config
 
+  test "config inspect" do
+    assert inspect(Sled.Config.new()) =~ ~r/#Sled\.Config<sled::Config\(.*\)>/
+  end
+
   test "config segment_mode" do
     assert_configured(:segment_mode, :linear, "Linear")
     assert_configured(:segment_mode, :gc, "Gc")

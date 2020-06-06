@@ -31,4 +31,5 @@ sled-*.tar
 /priv/native
 
 /my_db
+/my_*_db
 /default.sled
