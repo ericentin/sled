@@ -37,4 +37,11 @@ defmodule SledTest do
     assert nil == Sled.insert(db, "hello", "world")
     assert "world" == Sled.get(db, "hello")
   end
+
+  test "insert/del", context do
+    assert db = Sled.open(context.path)
+    assert nil == Sled.insert(db, "hello", "world")
+    assert "world" == Sled.remove(db, "hello")
+    assert nil == Sled.get(db, "hello")
+  end
 end

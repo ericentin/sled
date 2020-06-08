@@ -193,6 +193,12 @@ fn sled_get<'a>(env: Env<'a>, resource: Sled, k: Binary) -> Result<Option<Binary
     ivec_to_binary(env, resource.r#ref.0.get(k.as_slice()))
 }
 
+#[cfg_attr(feature = "io_uring", nif)]
+#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+fn sled_remove<'a>(env: Env<'a>, resource: Sled, k: Binary) -> Result<Option<Binary<'a>>, Error> {
+    ivec_to_binary(env, resource.r#ref.0.remove(k.as_slice()))
+}
+
 fn ivec_to_binary(env: Env, r: Result<Option<IVec>, sled::Error>) -> Result<Option<Binary>, Error> {
     match r {
         Ok(Some(v)) => match OwnedBinary::new(v.len()) {
@@ -231,7 +237,8 @@ init! {
         sled_config_inspect,
         sled_open,
         sled_insert,
-        sled_get
+        sled_get,
+        sled_remove
     ],
     load = on_load
 }
