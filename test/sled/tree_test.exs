@@ -21,6 +21,6 @@ defmodule Sled.TreeTest do
     assert db = %Sled{} = Sled.open(Sled.TestHelpers.test_db_name())
 
     assert inspect(Sled.Tree.open(db, "test_tree")) ==
-             "#Sled.Tree<db: #Sled<path: \"#{db.path}\">, name: \"test_tree\">"
+             "#Sled.Tree<db: #Sled<path: \"#{db.path}\", ...>, name: \"test_tree\", ...>"
   end
 end

@@ -9,25 +9,17 @@ defmodule Sled.ConfigTest do
   end
 
   test "config inspect" do
-    assert inspect(Sled.Config.new()) =~ ~r/#Sled\.Config<sled::Config\(.*\)>/
+    assert inspect(Sled.Config.new(), limit: :infinity) == "#Sled.Config<...>"
   end
 
-  test "config segment_mode" do
-    assert_configured(:mode, :low_space, "LowSpace")
-    assert_configured(:mode, :high_throughput, "HighThroughput")
+  test "config mode" do
+    assert Sled.Config.new(mode: :low_space)
+    assert Sled.Config.new(mode: :high_throughput)
 
-    assert_configure_raises(
-      :mode,
-      :not_a_mode,
-      "Erlang error: \"Could not decode field :mode on %SledConfigOptions{}\""
-    )
-  end
-
-  defp assert_configured(key, value, expected) do
-    assert inspect(Sled.Config.new([{key, value}])) =~ "#{key}: #{expected},"
-  end
-
-  defp assert_configure_raises(key, value, expected) do
-    assert_raise ErlangError, expected, fn -> Sled.Config.new([{key, value}]) end
+    assert_raise ErlangError,
+                 "Erlang error: \"Could not decode field :mode on %SledConfigOptions{}\"",
+                 fn ->
+                   Sled.Config.new(mode: :not_a_mode)
+                 end
   end
 end

@@ -30,6 +30,7 @@ defmodule Sled.Config do
           }
   end
 
+  @derive {Inspect, except: [:ref]}
   @enforce_keys [:ref]
   defstruct ref: nil
 
@@ -65,19 +66,10 @@ defmodule Sled.Config do
 
       iex> config = Sled.Config.new(path: "test_config_db")
       iex> Sled.Config.open(config)
-      #Sled<path: "test_config_db">
+      #Sled<path: "test_config_db", ...>
   """
   @spec open(t) :: Sled.t() | no_return
   def open(config) do
     Sled.Native.sled_config_open(config)
-  end
-
-  parent = __MODULE__
-
-  defimpl Inspect do
-    @impl true
-    def inspect(%unquote(parent){} = config, _opts) do
-      "##{unquote(inspect(parent))}<sled::" <> Sled.Native.sled_config_inspect(config) <> ">"
-    end
   end
 end

@@ -77,12 +77,6 @@ fn sled_config_new(opts: SledConfigOptions) -> Result<SledConfig, Error> {
     })
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[nif]
-fn sled_config_inspect(config: SledConfig) -> Result<String, Error> {
-    Ok(format!("{:?}", config.r#ref.0))
-}
-
 struct SledDbArc(Db);
 
 #[derive(NifStruct)]
@@ -228,7 +222,6 @@ init! {
     [
         sled_config_new,
         sled_config_open,
-        sled_config_inspect,
         sled_open,
         sled_tree_open,
         sled_insert,

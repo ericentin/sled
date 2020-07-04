@@ -27,7 +27,7 @@ defmodule SledTest do
   end
 
   test "db inspect", context do
-    assert inspect(Sled.open(context.path)) =~ ~r/#Sled<path: ".*TestDbDoNotUse.*">/
+    assert inspect(Sled.open(context.path)) == "#Sled<path: \"#{context.path}\", ...>"
   end
 
   test "open invalid db_path" do
