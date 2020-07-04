@@ -1,0 +1,6 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "native/sled_nif/Cargo.toml",
+        "native/io_uring_test/Cargo.toml"
+    ]
+}

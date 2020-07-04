@@ -2,16 +2,32 @@ defmodule SledTest do
   use ExUnit.Case
   doctest Sled
 
+  setup_all do
+    on_exit(fn ->
+      File.rm_rf!("test_db")
+      File.rm_rf!("test_default_db")
+    end)
+  end
+
   setup do
-    path = Path.join(System.tmp_dir!(), "SledTestDbDoNotUse")
-    File.rm_rf(path)
+    path = Sled.TestHelpers.test_db_name()
+    File.rm_rf!(path)
+
+    on_exit(fn ->
+      File.rm_rf!(path)
+    end)
+
     {:ok, path: path}
   end
 
   test "open db_path", context do
-    assert "#Sled<>" == inspect(Sled.open(context.path))
+    assert %Sled{} = Sled.open(context.path)
 
     assert File.exists?(context.path)
+  end
+
+  test "db inspect", context do
+    assert inspect(Sled.open(context.path)) == "#Sled<path: \"#{context.path}\", ...>"
   end
 
   test "open invalid db_path" do
@@ -38,7 +54,7 @@ defmodule SledTest do
     assert "world" == Sled.get(db, "hello")
   end
 
-  test "insert/del", context do
+  test "insert/remove", context do
     assert db = Sled.open(context.path)
     assert nil == Sled.insert(db, "hello", "world")
     assert "world" == Sled.remove(db, "hello")
