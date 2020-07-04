@@ -13,35 +13,13 @@ defmodule Sled.ConfigTest do
   end
 
   test "config segment_mode" do
-    assert_configured(:segment_mode, :linear, "Linear")
-    assert_configured(:segment_mode, :gc, "Gc")
+    assert_configured(:mode, :low_space, "LowSpace")
+    assert_configured(:mode, :high_throughput, "HighThroughput")
 
     assert_configure_raises(
-      :segment_mode,
+      :mode,
       :not_a_mode,
-      "Erlang error: \"Could not decode field :segment_mode on %SledConfigOptions{}\""
-    )
-  end
-
-  test "config flush_every_ms" do
-    assert_configured(:flush_every_ms, 1234, "Some(1234)")
-    assert_configured(:flush_every_ms, false, "None")
-
-    assert_configure_raises(
-      :flush_every_ms,
-      :not_a_time,
-      "Erlang error: \"Could not decode field :flush_every_ms on %SledConfigOptions{}\""
-    )
-  end
-
-  test "config snapshot_path" do
-    assert_configured(:snapshot_path, "test_snapshot_path", "Some(\"test_snapshot_path\")")
-    assert_configured(:snapshot_path, false, "None")
-
-    assert_configure_raises(
-      :snapshot_path,
-      :not_a_path,
-      "Erlang error: \"Could not decode field :snapshot_path on %SledConfigOptions{}\""
+      "Erlang error: \"Could not decode field :mode on %SledConfigOptions{}\""
     )
   end
 

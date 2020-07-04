@@ -5,20 +5,13 @@ defmodule Sled.Config do
     @moduledoc "Defines a struct for `Sled.Config` options."
 
     defstruct path: nil,
-              flush_every_ms: nil,
-              temporary: nil,
-              create_new: nil,
               cache_capacity: nil,
-              print_profile_on_drop: nil,
+              mode: nil,
               use_compression: nil,
               compression_factor: nil,
-              snapshot_after_ops: nil,
-              segment_cleanup_threshold: nil,
-              segment_cleanup_skew: nil,
-              segment_mode: nil,
-              snapshot_path: nil,
-              idgen_persist_interval: nil,
-              read_only: nil
+              temporary: nil,
+              create_new: nil,
+              print_profile_on_drop: nil
 
     @typedoc """
     sled configuration options.
@@ -27,20 +20,13 @@ defmodule Sled.Config do
     """
     @type t :: %__MODULE__{
             path: Path.t() | nil,
-            flush_every_ms: integer() | false | nil,
-            temporary: boolean() | nil,
-            create_new: boolean() | nil,
             cache_capacity: integer() | nil,
-            print_profile_on_drop: boolean() | nil,
+            mode: :low_space | :high_throughput | nil,
             use_compression: boolean() | nil,
             compression_factor: integer() | nil,
-            snapshot_after_ops: integer() | nil,
-            segment_cleanup_threshold: integer() | nil,
-            segment_cleanup_skew: integer() | nil,
-            segment_mode: :gc | :linear | nil,
-            snapshot_path: Path.t() | false | nil,
-            idgen_persist_interval: integer() | nil,
-            read_only: boolean() | nil
+            temporary: boolean() | nil,
+            create_new: boolean() | nil,
+            print_profile_on_drop: boolean() | nil
           }
   end
 

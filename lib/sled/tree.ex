@@ -1,12 +1,12 @@
 defmodule Sled.Tree do
   @moduledoc "Defines a struct which references a sled Tree."
-  @enforce_keys [:ref, :name]
-  defstruct ref: nil, name: nil
+  @enforce_keys [:ref, :db, :name]
+  defstruct ref: nil, db: nil, name: nil
 
   @typedoc """
   A handle to a sled Tree.
   """
-  @opaque t :: %__MODULE__{ref: reference(), name: binary()}
+  @opaque t :: %__MODULE__{ref: reference(), db: Sled.t(), name: binary()}
 
   @doc """
   Open the sled [Tree](https://docs.rs/sled/0.31.0/sled/struct.Db.html#method.open_tree) accessed via `db`
@@ -22,7 +22,7 @@ defmodule Sled.Tree do
   defimpl Inspect do
     @impl true
     def inspect(%unquote(parent){} = tree, _opts) do
-      "##{unquote(inspect(parent))}<name: \"#{tree.name}\">"
+      "##{unquote(inspect(parent))}<db: #{inspect(tree.db)}, name: \"#{tree.name}\">"
     end
   end
 end
