@@ -38,11 +38,7 @@ struct SledConfig {
 struct SledConfigArc(Config);
 
 impl SledConfigArc {
-    fn set<T, F: FnOnce(Config, T) -> Config>(
-        mut self,
-        setter: F,
-        value: Option<T>,
-    ) -> SledConfigArc {
+    fn set<T, F: Fn(Config, T) -> Config>(mut self, setter: F, value: Option<T>) -> SledConfigArc {
         match value {
             Some(value) => {
                 self.0 = setter(self.0, value);
@@ -125,11 +121,11 @@ struct SledTree {
 #[allow(clippy::needless_pass_by_value)]
 #[cfg_attr(feature = "io_uring", nif)]
 #[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
-fn sled_tree_open(resource: SledDb, name: String) -> Result<SledTree, Error> {
-    match resource.r#ref.0.open_tree(name.clone()) {
+fn sled_tree_open(db: SledDb, name: String) -> Result<SledTree, Error> {
+    match db.r#ref.0.open_tree(name.clone()) {
         Ok(tree) => Ok(SledTree {
             r#ref: ResourceArc::new(SledTreeArc(tree)),
-            db: resource,
+            db,
             name,
         }),
         Err(err) => wrap_sled_err(&err),
