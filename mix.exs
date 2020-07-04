@@ -1,7 +1,7 @@
 defmodule Sled.MixProject do
   use Mix.Project
 
-  @version "0.1.0-alpha.1"
+  @version "0.1.0-alpha.2"
 
   def project do
     [
@@ -58,7 +58,8 @@ defmodule Sled.MixProject do
         "native/io_uring_test/Cargo.toml",
         ".formatter.exs",
         "mix.exs",
-        "README.md"
+        "README.md",
+        "LICENSE*"
       ],
       maintainers: ["Eric Entin"],
       licenses: ["Apache-2.0", "MIT"],
