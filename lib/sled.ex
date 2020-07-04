@@ -16,15 +16,9 @@ defmodule Sled do
   defstruct ref: nil, path: nil
 
   @typedoc """
-  A handle to a sled db.
+  A reference to a sled db.
   """
   @opaque t :: %__MODULE__{ref: reference(), path: binary()}
-
-  @typedoc """
-  A handle to a sled tree. Passing a `t:t/0` refers to the "default" tree for the db, while a
-  `t:Sled.Tree.t/0` uses the referenced "tenant" tree.
-  """
-  @type tree :: t() | Sled.Tree.t()
 
   @doc """
   Open the db with `options`, by default creating it if it doesn't exist.
@@ -48,12 +42,39 @@ defmodule Sled do
     |> Sled.Config.open()
   end
 
+  defmodule Tree do
+    @moduledoc "Defines a struct for sled tenant tree references."
+
+    @derive {Inspect, except: [:ref]}
+    @enforce_keys [:ref, :db, :name]
+    defstruct ref: nil, db: nil, name: nil
+
+    @typedoc """
+    A reference to a sled tenant tree.
+    """
+    @opaque t :: %__MODULE__{ref: reference(), db: Sled.t(), name: String.t()}
+  end
+
+  @doc """
+  Open the sled tenant tree in `db` named `name`, creating it if it doesn't exist.
+  """
+  @spec open_tree(t(), String.t()) :: Sled.Tree.t() | no_return
+  def open_tree(db, name) do
+    Sled.Native.sled_tree_open(db, name)
+  end
+
+  @typedoc """
+  A reference to a sled tree. Passing a `t:t/0` refers to the "default" tree for the db, while a
+  `t:Sled.Tree.t/0` references a "tenant" tree.
+  """
+  @type tree_ref :: t() | Sled.Tree.t()
+
   @doc """
   Insert `value` into `db` for `key`.
 
   Returns `nil` if there was no previous value associated with the key.
   """
-  @spec insert(tree, binary, binary) :: binary | nil | no_return
+  @spec insert(tree_ref, binary, binary) :: binary | nil | no_return
   def insert(db, key, value) do
     Sled.Native.sled_insert(db, key, value)
   end
@@ -63,7 +84,7 @@ defmodule Sled do
 
   Returns `nil` if there is no value associated with the key.
   """
-  @spec get(tree, binary) :: binary | nil | no_return
+  @spec get(tree_ref, binary) :: binary | nil | no_return
   def get(db, key) do
     Sled.Native.sled_get(db, key)
   end
@@ -73,7 +94,7 @@ defmodule Sled do
 
   Returns `nil` if there is no value associated with the key.
   """
-  @spec remove(tree, binary) :: binary | nil | no_return
+  @spec remove(tree_ref, binary) :: binary | nil | no_return
   def remove(db, key) do
     Sled.Native.sled_remove(db, key)
   end

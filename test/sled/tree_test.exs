@@ -13,14 +13,20 @@ defmodule Sled.TreeTest do
     {:ok, db: Sled.open(path)}
   end
 
-  test "open tree", context do
-    assert %Sled.Tree{} = Sled.Tree.open(context.db, "test_tree")
+  test "open tree", %{db: db} do
+    assert %Sled.Tree{} = Sled.open_tree(db, "test_tree")
   end
 
-  test "tree inspect" do
-    assert db = %Sled{} = Sled.open(Sled.TestHelpers.test_db_name())
-
-    assert inspect(Sled.Tree.open(db, "test_tree")) ==
+  test "tree inspect", %{db: db} do
+    assert inspect(Sled.open_tree(db, "test_tree")) ==
              "#Sled.Tree<db: #Sled<path: \"#{db.path}\", ...>, name: \"test_tree\", ...>"
+  end
+
+  test "tree insert/remove", %{db: db} do
+    tree = Sled.open_tree(db, "test_tree")
+    assert nil == Sled.insert(tree, "hello", "world")
+    assert nil == Sled.get(db, "hello")
+    assert "world" == Sled.remove(tree, "hello")
+    assert nil == Sled.get(tree, "hello")
   end
 end

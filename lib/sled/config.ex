@@ -16,7 +16,8 @@ defmodule Sled.Config do
     @typedoc """
     sled configuration options.
 
-    For more info, refer to https://docs.rs/sled/0.31/sled/struct.Config.html#methods.
+    For more info, refer to the [sled
+    docs](https://docs.rs/sled/0.32/sled/struct.Config.html#implementations).
     """
     @type t :: %__MODULE__{
             path: Path.t() | nil,
@@ -35,12 +36,15 @@ defmodule Sled.Config do
   defstruct ref: nil
 
   @typedoc """
-  A handle to a cached sled config.
+  A reference to a cached sled config.
   """
   @opaque t :: %__MODULE__{ref: reference()}
 
   @doc """
   Create a sled config for `options`.
+
+  For more info, refer to the [sled
+  docs](https://docs.rs/sled/0.32/sled/struct.Config.html#implementations).
 
   You can pass keyword arguments:
 
