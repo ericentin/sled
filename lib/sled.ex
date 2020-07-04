@@ -59,6 +59,16 @@ defmodule Sled do
     Sled.Native.sled_get(db, key)
   end
 
+  @doc """
+  Delete the value for `key` from `db`.
+
+  Returns `nil` if there is no value associated with the key.
+  """
+  @spec remove(t, binary) :: binary | nil | no_return
+  def remove(db, key) do
+    Sled.Native.sled_remove(db, key)
+  end
+
   parent = __MODULE__
 
   defimpl Inspect do
