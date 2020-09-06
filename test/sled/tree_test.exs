@@ -10,32 +10,48 @@ defmodule Sled.TreeTest do
       File.rm_rf!(path)
     end)
 
-    {:ok, db: Sled.open(path)}
+    db = Sled.open(path)
+
+    {:ok, db: db, tree: Sled.open_tree(db, "test_tree")}
   end
 
-  test "open tree", %{db: db} do
-    assert %Sled.Tree{} = Sled.open_tree(db, "test_tree")
+  test "open tree", %{tree: tree} do
+    assert %Sled.Tree{} = tree
   end
 
-  test "tree inspect", %{db: db} do
-    assert inspect(Sled.open_tree(db, "test_tree")) ==
+  test "tree inspect", %{db: db, tree: tree} do
+    assert inspect(tree) ==
              "#Sled.Tree<db: #Sled<path: #{inspect(db.path)}, ...>, name: \"test_tree\", ...>"
   end
 
-  test "tree insert/remove", %{db: db} do
-    tree = Sled.open_tree(db, "test_tree")
-    assert nil == Sled.insert(tree, "hello", "world")
-    assert nil == Sled.get(db, "hello")
-    assert "world" == Sled.remove(tree, "hello")
-    assert nil == Sled.get(tree, "hello")
+  test "insert/get", %{db: db, tree: tree} do
+    assert nil == Sled.insert(db, "hello", "world")
+    assert nil == Sled.insert(tree, "hello", "world2")
+    assert "world" == Sled.get(db, "hello")
+    assert "world2" == Sled.get(tree, "hello")
   end
 
-  test "tree checksum", %{db: db} do
-    tree = Sled.open_tree(db, "test_tree")
-    assert 0 == Sled.checksum(db)
-    assert 0 == Sled.checksum(tree)
+  test "insert/remove", %{db: db, tree: tree} do
+    assert nil == Sled.insert(db, "hello", "world")
+    assert nil == Sled.insert(tree, "hello", "world2")
+    assert "world" == Sled.remove(db, "hello")
+    assert "world2" == Sled.remove(tree, "hello")
+  end
+
+  test "checksum", %{db: db, tree: tree} do
+    a = Sled.checksum(db)
+    b = Sled.checksum(tree)
     assert nil == Sled.insert(tree, "hello", "world")
-    assert 0 == Sled.checksum(db)
-    assert 4_192_936_109 == Sled.checksum(tree)
+    assert a == Sled.checksum(db)
+    assert b != Sled.checksum(tree)
+  end
+
+  test "flush", %{db: db, tree: tree} do
+    Sled.insert(db, "hello", "world")
+    assert 0 != Sled.flush(db)
+    assert 0 == Sled.flush(db)
+    Sled.insert(tree, "hello", "world")
+    assert 0 != Sled.flush(tree)
+    assert 0 == Sled.flush(tree)
   end
 end
