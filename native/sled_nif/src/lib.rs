@@ -193,7 +193,7 @@ fn sled_remove<'a>(env: Env<'a>, tree: SledDbTree, k: Binary) -> Result<Option<B
 fn wrap_result<T>(r: Result<T, sled::Error>) -> Result<T, Error> {
     match r {
         Ok(v) => Ok(v),
-        Err(err) => wrap_sled_err(&err)
+        Err(err) => wrap_sled_err(&err),
     }
 }
 
@@ -204,7 +204,7 @@ fn result_to_binary(
     match wrap_result(r) {
         Ok(Some(v)) => ivec_to_binary(env, &v),
         Ok(None) => Ok(None),
-        Err(err) => Err(err)
+        Err(err) => Err(err),
     }
 }
 
