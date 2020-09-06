@@ -60,4 +60,13 @@ defmodule SledTest do
     assert "world" == Sled.remove(db, "hello")
     assert nil == Sled.get(db, "hello")
   end
+
+  test "checksum", context do
+    assert db = Sled.open(context.path)
+    assert 0 == Sled.checksum(db)
+    assert 4033561852 == Sled.db_checksum(db)
+    assert nil == Sled.insert(db, "hello", "world")
+    assert 4192936109 == Sled.checksum(db)
+    assert 2568657029 == Sled.db_checksum(db)
+  end
 end

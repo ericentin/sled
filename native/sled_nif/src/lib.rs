@@ -109,6 +109,13 @@ fn do_sled_open(result: sled::Result<Db>, path: String) -> Result<SledDb, Error>
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
+#[cfg_attr(feature = "io_uring", nif)]
+#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+fn sled_db_checksum(db: SledDb) -> Result<u32, Error> {
+    wrap_result(db.r#ref.0.checksum())
+}
+
 struct SledTreeArc(Tree);
 
 #[derive(NifStruct)]
@@ -148,6 +155,13 @@ impl Deref for SledDbTree {
             SledDbTree::Tenant(tree) => &tree.r#ref.0,
         }
     }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+#[cfg_attr(feature = "io_uring", nif)]
+#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+fn sled_checksum(tree: SledDbTree) -> Result<u32, Error> {
+    wrap_result(tree.checksum())
 }
 
 #[allow(clippy::needless_pass_by_value)]
@@ -228,6 +242,8 @@ init! {
         sled_config_open,
         sled_open,
         sled_tree_open,
+        sled_db_checksum,
+        sled_checksum,
         sled_insert,
         sled_get,
         sled_remove

@@ -9,10 +9,12 @@ defmodule Sled.Native do
   def sled_open(_path), do: error()
 
   def sled_tree_open(_db, _name), do: error()
+  def sled_db_checksum(_db), do: error()
 
   def sled_insert(_tree, _k, _v), do: error()
   def sled_get(_tree, _k), do: error()
   def sled_remove(_tree, _k), do: error()
+  def sled_checksum(_tree), do: error()
 
   defp error, do: :erlang.nif_error(:nif_not_loaded)
 end

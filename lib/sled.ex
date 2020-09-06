@@ -63,6 +63,16 @@ defmodule Sled do
     Sled.Native.sled_tree_open(db, name)
   end
 
+  @doc """
+  Retrieve the CRC32 of all keys and values in `db`.
+
+  This is O(N) and locks the underlying trees for the duration of the entire scan.
+  """
+  @spec db_checksum(t()) :: integer | no_return
+  def db_checksum(db) do
+    Sled.Native.sled_db_checksum(db)
+  end
+
   @typedoc """
   A reference to a sled tree. Passing a `t:t/0` refers to the "default" tree for the db, while a
   `t:Sled.Tree.t/0` references a "tenant" tree.
@@ -97,5 +107,15 @@ defmodule Sled do
   @spec remove(tree_ref, binary) :: binary | nil | no_return
   def remove(tree, key) do
     Sled.Native.sled_remove(tree, key)
+  end
+
+  @doc """
+  Retrieve the CRC32 of all keys and values in `tree`.
+
+  This is O(N) and locks the underlying tree for the duration of the entire scan.
+  """
+  @spec checksum(tree_ref) :: integer | no_return
+  def checksum(tree) do
+    Sled.Native.sled_checksum(tree)
   end
 end
