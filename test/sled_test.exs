@@ -27,12 +27,12 @@ defmodule SledTest do
   end
 
   test "db inspect", context do
-    assert inspect(Sled.open(context.path)) == "#Sled<path: \"#{context.path}\", ...>"
+    assert inspect(Sled.open(context.path)) == "#Sled<path: #{inspect(context.path)}, ...>"
   end
 
   test "open invalid db_path" do
     assert_raise ErlangError,
-                 "Erlang error: \"sled::Error::Io(Custom { kind: InvalidInput, error: \\\"data provided contains a nul byte\\\" })\"",
+                 ~r/Erlang error: \"sled::Error::Io\(Custom { kind: InvalidInput, error: .*/,
                  fn -> Sled.open("\0") end
   end
 

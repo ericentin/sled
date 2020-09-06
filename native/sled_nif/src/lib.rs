@@ -1,5 +1,6 @@
-#![deny(clippy::all)]
-#![deny(clippy::pedantic)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
 
 use std::ops::Deref;
 
@@ -175,14 +176,21 @@ fn sled_remove<'a>(env: Env<'a>, tree: SledDbTree, k: Binary) -> Result<Option<B
     result_to_binary(env, tree.remove(&k[..]))
 }
 
+fn wrap_result<T>(r: Result<T, sled::Error>) -> Result<T, Error> {
+    match r {
+        Ok(v) => Ok(v),
+        Err(err) => wrap_sled_err(&err)
+    }
+}
+
 fn result_to_binary(
     env: Env,
     r: Result<Option<IVec>, sled::Error>,
 ) -> Result<Option<Binary>, Error> {
-    match r {
+    match wrap_result(r) {
         Ok(Some(v)) => ivec_to_binary(env, &v),
         Ok(None) => Ok(None),
-        Err(err) => wrap_sled_err(&err),
+        Err(err) => Err(err)
     }
 }
 

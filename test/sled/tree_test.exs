@@ -19,7 +19,7 @@ defmodule Sled.TreeTest do
 
   test "tree inspect", %{db: db} do
     assert inspect(Sled.open_tree(db, "test_tree")) ==
-             "#Sled.Tree<db: #Sled<path: \"#{db.path}\", ...>, name: \"test_tree\", ...>"
+             "#Sled.Tree<db: #Sled<path: #{inspect(db.path)}, ...>, name: \"test_tree\", ...>"
   end
 
   test "tree insert/remove", %{db: db} do
