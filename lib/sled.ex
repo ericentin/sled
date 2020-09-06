@@ -64,6 +64,16 @@ defmodule Sled do
   end
 
   @doc """
+  Drop the sled tenant tree in `db` named `name`.
+
+  Returns `true` if a tree was dropped, otherwise `false`.
+  """
+  @spec drop_tree(t(), String.t()) :: boolean | no_return
+  def drop_tree(db, name) do
+    Sled.Native.sled_tree_drop(db, name)
+  end
+
+  @doc """
   Retrieve the CRC32 of all keys and values in `db`.
 
   This is O(N) and locks the underlying trees for the duration of the entire scan.

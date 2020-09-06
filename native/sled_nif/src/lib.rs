@@ -33,13 +33,17 @@ enum Mode {
 #[derive(NifStruct)]
 #[module = "Sled.Config"]
 struct SledConfig {
-    pub r#ref: ResourceArc<SledConfigArc>,
+    pub r#ref: ResourceArc<SledConfigResource>,
 }
 
-struct SledConfigArc(Config);
+struct SledConfigResource(Config);
 
-impl SledConfigArc {
-    fn set<T, F: Fn(Config, T) -> Config>(mut self, setter: F, value: Option<T>) -> SledConfigArc {
+impl SledConfigResource {
+    fn set<T, F: Fn(Config, T) -> Config>(
+        mut self,
+        setter: F,
+        value: Option<T>,
+    ) -> SledConfigResource {
         match value {
             Some(value) => {
                 self.0 = setter(self.0, value);
@@ -59,7 +63,7 @@ fn mode_to_rust(mode: Option<Mode>) -> Option<sled::Mode> {
 
 #[nif]
 fn sled_config_new(opts: SledConfigOptions) -> Result<SledConfig, Error> {
-    let config = SledConfigArc(Config::new())
+    let config = SledConfigResource(Config::new())
         .set(&Config::path, opts.path)
         .set(&Config::cache_capacity, opts.cache_capacity)
         .set(&Config::mode, mode_to_rust(opts.mode))
@@ -74,12 +78,12 @@ fn sled_config_new(opts: SledConfigOptions) -> Result<SledConfig, Error> {
     })
 }
 
-struct SledDbArc(Db);
+struct SledDbResource(Db);
 
 #[derive(NifStruct)]
 #[module = "Sled"]
 struct SledDb {
-    pub r#ref: ResourceArc<SledDbArc>,
+    pub r#ref: ResourceArc<SledDbResource>,
     pub path: String,
 }
 
@@ -100,13 +104,10 @@ fn sled_open(path: String) -> Result<SledDb, Error> {
 }
 
 fn do_sled_open(result: sled::Result<Db>, path: String) -> Result<SledDb, Error> {
-    match result {
-        Ok(db) => Ok(SledDb {
-            r#ref: ResourceArc::new(SledDbArc(db)),
-            path,
-        }),
-        Err(err) => wrap_sled_err(&err),
-    }
+    wrap_result(result).map(|db| SledDb {
+        r#ref: ResourceArc::new(SledDbResource(db)),
+        path,
+    })
 }
 
 #[allow(clippy::needless_pass_by_value)]
@@ -123,12 +124,12 @@ fn sled_size_on_disk(db: SledDb) -> Result<u64, Error> {
     wrap_result(db.r#ref.0.size_on_disk())
 }
 
-struct SledTreeArc(Tree);
+struct SledTreeResource(Tree);
 
 #[derive(NifStruct)]
 #[module = "Sled.Tree"]
 struct SledTree {
-    pub r#ref: ResourceArc<SledTreeArc>,
+    pub r#ref: ResourceArc<SledTreeResource>,
     pub db: SledDb,
     pub name: String,
 }
@@ -137,14 +138,18 @@ struct SledTree {
 #[cfg_attr(feature = "io_uring", nif)]
 #[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
 fn sled_tree_open(db: SledDb, name: String) -> Result<SledTree, Error> {
-    match db.r#ref.0.open_tree(name.clone()) {
-        Ok(tree) => Ok(SledTree {
-            r#ref: ResourceArc::new(SledTreeArc(tree)),
-            db,
-            name,
-        }),
-        Err(err) => wrap_sled_err(&err),
-    }
+    wrap_result(db.r#ref.0.open_tree(name.clone())).map(|tree| SledTree {
+        r#ref: ResourceArc::new(SledTreeResource(tree)),
+        db,
+        name,
+    })
+}
+
+#[allow(clippy::needless_pass_by_value)]
+#[cfg_attr(feature = "io_uring", nif)]
+#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+fn sled_tree_drop(db: SledDb, name: String) -> Result<bool, Error> {
+    wrap_result(db.r#ref.0.drop_tree(name))
 }
 
 #[derive(NifUntaggedEnum)]
@@ -204,10 +209,7 @@ fn sled_remove<'a>(env: Env<'a>, tree: SledDbTree, k: Binary) -> Result<Option<B
 }
 
 fn wrap_result<T>(r: Result<T, sled::Error>) -> Result<T, Error> {
-    match r {
-        Ok(v) => Ok(v),
-        Err(err) => wrap_sled_err(&err),
-    }
+    r.map_err(|err| wrap_sled_err(&err))
 }
 
 fn result_to_binary(
@@ -227,24 +229,24 @@ fn ivec_to_binary<'a>(env: Env<'a>, v: &IVec) -> Result<Option<Binary<'a>>, Erro
             owned_binary.as_mut_slice().copy_from_slice(&v);
             Ok(Some(owned_binary.release(env)))
         }
-        None => wrap_err(String::from(
+        None => Err(wrap_err(String::from(
             "failed to allocate OwnedBinary for result value",
-        )),
+        ))),
     }
 }
 
-fn wrap_sled_err<T>(err: &sled::Error) -> Result<T, Error> {
+fn wrap_sled_err(err: &sled::Error) -> Error {
     wrap_err(format!("sled::Error::{:?}", err))
 }
 
-fn wrap_err<T>(err: String) -> Result<T, Error> {
-    Err(Error::RaiseTerm(Box::new(err)))
+fn wrap_err(err: String) -> Error {
+    Error::RaiseTerm(Box::new(err))
 }
 
 fn on_load(env: Env, _info: Term) -> bool {
-    resource!(SledConfigArc, env);
-    resource!(SledDbArc, env);
-    resource!(SledTreeArc, env);
+    resource!(SledConfigResource, env);
+    resource!(SledDbResource, env);
+    resource!(SledTreeResource, env);
     true
 }
 
@@ -255,6 +257,7 @@ init! {
         sled_config_open,
         sled_open,
         sled_tree_open,
+        sled_tree_drop,
         sled_db_checksum,
         sled_size_on_disk,
         sled_checksum,

@@ -11,8 +11,9 @@ defmodule Sled.TreeTest do
     end)
 
     db = Sled.open(path)
+    tree_name = "test_tree"
 
-    {:ok, db: db, tree: Sled.open_tree(db, "test_tree")}
+    {:ok, db: db, tree: Sled.open_tree(db, tree_name), tree_name: tree_name}
   end
 
   test "open tree", %{tree: tree} do
@@ -53,5 +54,11 @@ defmodule Sled.TreeTest do
     Sled.insert(tree, "hello", "world")
     assert 0 != Sled.flush(tree)
     assert 0 == Sled.flush(tree)
+  end
+
+  test "drop_tree", %{db: db, tree: tree, tree_name: tree_name} do
+    assert false == Sled.drop_tree(db, "uncreated_tree")
+    assert true == Sled.drop_tree(db, tree_name)
+    assert false == Sled.drop_tree(db, tree_name)
   end
 end
