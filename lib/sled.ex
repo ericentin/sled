@@ -70,32 +70,32 @@ defmodule Sled do
   @type tree_ref :: t() | Sled.Tree.t()
 
   @doc """
-  Insert `value` into `db` for `key`.
+  Insert `value` into `tree` for `key`.
 
   Returns `nil` if there was no previous value associated with the key.
   """
   @spec insert(tree_ref, binary, binary) :: binary | nil | no_return
-  def insert(db, key, value) do
-    Sled.Native.sled_insert(db, key, value)
+  def insert(tree, key, value) do
+    Sled.Native.sled_insert(tree, key, value)
   end
 
   @doc """
-  Retrieve the value for `key` from `db`.
+  Retrieve the value for `key` from `tree`.
 
   Returns `nil` if there is no value associated with the key.
   """
   @spec get(tree_ref, binary) :: binary | nil | no_return
-  def get(db, key) do
-    Sled.Native.sled_get(db, key)
+  def get(tree, key) do
+    Sled.Native.sled_get(tree, key)
   end
 
   @doc """
-  Delete the value for `key` from `db`.
+  Delete the value for `key` from `tree`.
 
   Returns `nil` if there is no value associated with the key.
   """
   @spec remove(tree_ref, binary) :: binary | nil | no_return
-  def remove(db, key) do
-    Sled.Native.sled_remove(db, key)
+  def remove(tree, key) do
+    Sled.Native.sled_remove(tree, key)
   end
 end
