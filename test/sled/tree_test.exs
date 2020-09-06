@@ -36,6 +36,6 @@ defmodule Sled.TreeTest do
     assert 0 == Sled.checksum(tree)
     assert nil == Sled.insert(tree, "hello", "world")
     assert 0 == Sled.checksum(db)
-    assert 4192936109 == Sled.checksum(tree)
+    assert 4_192_936_109 == Sled.checksum(tree)
   end
 end
