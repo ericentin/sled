@@ -1,6 +1,5 @@
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::not_unsafe_ptr_arg_deref)]
 
 use std::ops::Deref;
 
@@ -87,9 +86,7 @@ struct SledDb {
     pub path: String,
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_config_open(config: SledConfig) -> Result<SledDb, Error> {
     do_sled_open(
         config.r#ref.0.open(),
@@ -97,8 +94,7 @@ fn sled_config_open(config: SledConfig) -> Result<SledDb, Error> {
     )
 }
 
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_open(path: String) -> Result<SledDb, Error> {
     do_sled_open(sled::open(path.clone()), path)
 }
@@ -110,23 +106,17 @@ fn do_sled_open(result: sled::Result<Db>, path: String) -> Result<SledDb, Error>
     })
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_db_checksum(db: SledDb) -> Result<u32, Error> {
     wrap_result(db.r#ref.0.checksum())
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_size_on_disk(db: SledDb) -> Result<u64, Error> {
     wrap_result(db.r#ref.0.size_on_disk())
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_was_recovered(db: SledDb) -> bool {
     db.r#ref.0.was_recovered()
 }
@@ -141,9 +131,7 @@ struct SledTree {
     pub name: String,
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_tree_open(db: SledDb, name: String) -> Result<SledTree, Error> {
     wrap_result(db.r#ref.0.open_tree(name.clone())).map(|tree| SledTree {
         r#ref: ResourceArc::new(SledTreeResource(tree)),
@@ -152,16 +140,12 @@ fn sled_tree_open(db: SledDb, name: String) -> Result<SledTree, Error> {
     })
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_tree_drop(db: SledDb, name: String) -> Result<bool, Error> {
     wrap_result(db.r#ref.0.drop_tree(name))
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_tree_names(env: Env, db: SledDb) -> Result<Vec<Binary>, Error> {
     let tree_names = db.r#ref.0.tree_names();
     let mut result = Vec::with_capacity(tree_names.len());
@@ -190,22 +174,17 @@ impl Deref for SledDbTree {
     }
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_checksum(tree: SledDbTree) -> Result<u32, Error> {
     wrap_result(tree.checksum())
 }
 
-#[allow(clippy::needless_pass_by_value)]
 #[nif(schedule = "DirtyIo")]
 fn sled_flush(tree: SledDbTree) -> Result<usize, Error> {
     wrap_result(tree.flush())
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_insert<'a>(
     env: Env<'a>,
     tree: SledDbTree,
@@ -215,16 +194,12 @@ fn sled_insert<'a>(
     result_to_binary(env, tree.insert(&k[..], &v[..]))
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_get<'a>(env: Env<'a>, tree: SledDbTree, k: Binary) -> Result<Option<Binary<'a>>, Error> {
     result_to_binary(env, tree.get(&k[..]))
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[cfg_attr(feature = "io_uring", nif)]
-#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+#[nif(schedule = "DirtyIo")]
 fn sled_remove<'a>(env: Env<'a>, tree: SledDbTree, k: Binary) -> Result<Option<Binary<'a>>, Error> {
     result_to_binary(env, tree.remove(&k[..]))
 }
