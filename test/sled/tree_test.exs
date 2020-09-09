@@ -56,9 +56,15 @@ defmodule Sled.TreeTest do
     assert 0 == Sled.flush(tree)
   end
 
-  test "drop_tree", %{db: db, tree: tree, tree_name: tree_name} do
+  test "drop_tree", %{db: db, tree_name: tree_name} do
     assert false == Sled.drop_tree(db, "uncreated_tree")
     assert true == Sled.drop_tree(db, tree_name)
     assert false == Sled.drop_tree(db, tree_name)
+  end
+
+  test "tree_names", %{db: db, tree_name: tree_name} do
+    tree_names = Sled.tree_names(db)
+    assert tree_name in tree_names
+    assert length(tree_names) == 2
   end
 end

@@ -152,6 +152,20 @@ fn sled_tree_drop(db: SledDb, name: String) -> Result<bool, Error> {
     wrap_result(db.r#ref.0.drop_tree(name))
 }
 
+#[allow(clippy::needless_pass_by_value)]
+#[cfg_attr(feature = "io_uring", nif)]
+#[cfg_attr(not(feature = "io_uring"), nif(schedule = "DirtyIo"))]
+fn sled_tree_names(env: Env, db: SledDb) -> Result<Vec<Binary>, Error> {
+    let tree_names = db.r#ref.0.tree_names();
+    let mut result = Vec::with_capacity(tree_names.len());
+
+    for tree_name in tree_names {
+        result.push(ivec_to_binary(env, &tree_name)?)
+    }
+
+    Ok(result)
+}
+
 #[derive(NifUntaggedEnum)]
 enum SledDbTree {
     Default(SledDb),
@@ -217,17 +231,17 @@ fn result_to_binary(
     r: Result<Option<IVec>, sled::Error>,
 ) -> Result<Option<Binary>, Error> {
     match wrap_result(r) {
-        Ok(Some(v)) => ivec_to_binary(env, &v),
+        Ok(Some(v)) => ivec_to_binary(env, &v).map(&Some),
         Ok(None) => Ok(None),
         Err(err) => Err(err),
     }
 }
 
-fn ivec_to_binary<'a>(env: Env<'a>, v: &IVec) -> Result<Option<Binary<'a>>, Error> {
+fn ivec_to_binary<'a>(env: Env<'a>, v: &IVec) -> Result<Binary<'a>, Error> {
     match OwnedBinary::new(v.len()) {
         Some(mut owned_binary) => {
             owned_binary.as_mut_slice().copy_from_slice(&v);
-            Ok(Some(owned_binary.release(env)))
+            Ok(owned_binary.release(env))
         }
         None => Err(wrap_err(String::from(
             "failed to allocate OwnedBinary for result value",
@@ -258,6 +272,7 @@ init! {
         sled_open,
         sled_tree_open,
         sled_tree_drop,
+        sled_tree_names,
         sled_db_checksum,
         sled_size_on_disk,
         sled_checksum,

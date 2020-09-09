@@ -74,6 +74,14 @@ defmodule Sled do
   end
 
   @doc """
+  Get the tree names saved in `db`.
+  """
+  @spec tree_names(t()) :: [String.t()] | no_return
+  def tree_names(db) do
+    Sled.Native.sled_tree_names(db)
+  end
+
+  @doc """
   Retrieve the CRC32 of all keys and values in `db`.
 
   This is O(N) and locks the underlying trees for the duration of the entire scan.

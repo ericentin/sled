@@ -10,6 +10,7 @@ defmodule Sled.Native do
 
   def sled_tree_open(_db, _name), do: error()
   def sled_tree_drop(_db, _name), do: error()
+  def sled_tree_names(_db), do: error()
   def sled_db_checksum(_db), do: error()
   def sled_size_on_disk(_db), do: error()
 
