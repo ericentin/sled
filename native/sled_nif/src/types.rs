@@ -130,6 +130,14 @@ impl SledTree {
     }
 }
 
+impl Deref for SledTree {
+    type Target = Tree;
+
+    fn deref(&self) -> &Tree {
+        &self.r#ref.0
+    }
+}
+
 #[derive(NifUntaggedEnum)]
 pub enum SledDbTree {
     Default(SledDb),
@@ -141,8 +149,8 @@ impl Deref for SledDbTree {
 
     fn deref(&self) -> &Tree {
         match &self {
-            SledDbTree::Default(db) => &*db,
-            SledDbTree::Tenant(tree) => &tree.r#ref.0,
+            SledDbTree::Default(db) => &db,
+            SledDbTree::Tenant(tree) => &tree,
         }
     }
 }
