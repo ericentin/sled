@@ -99,6 +99,14 @@ defmodule Sled do
     Sled.Native.sled_size_on_disk(db)
   end
 
+  @doc """
+  Returns true if `db` was recovered from a previous process.
+  """
+  @spec was_recovered(t()) :: boolean
+  def was_recovered(db) do
+    Sled.Native.sled_was_recovered(db)
+  end
+
   @typedoc """
   A reference to a sled tree. Passing a `t:t/0` refers to the "default" tree for the db, while a
   `t:Sled.Tree.t/0` references a "tenant" tree.

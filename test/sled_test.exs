@@ -62,4 +62,36 @@ defmodule SledTest do
     Sled.flush(db)
     assert size_on_disk != Sled.size_on_disk(db)
   end
+
+  test "was_recovered", context do
+    assert db = Sled.open(context.path)
+    refute Sled.was_recovered(db)
+
+    # Since there's no way to force a resource to be dropped, and a sled DB can only be open from
+    # one process, we create the db from a separate VM in order to open it a second time from our
+    # tests.
+    try do
+      {_stdout, 0} =
+        System.cmd(
+          "mix",
+          [
+            "run",
+            "--no-compile",
+            "--no-deps-check",
+            "--no-archives-check",
+            "--no-start",
+            "--require",
+            "test/was_recovered_helper.exs"
+          ],
+          into: IO.stream(:stdio, :line),
+          env: [{"MIX_ENV", "test"}],
+          stderr_to_stdout: true
+        )
+
+      assert db2 = Sled.open("test_recovered_db")
+      assert Sled.was_recovered(db2)
+    after
+      File.rm_rf!("test_recovered_db")
+    end
+  end
 end
