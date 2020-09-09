@@ -107,6 +107,14 @@ defmodule Sled do
     Sled.Native.sled_was_recovered(db)
   end
 
+  @doc """
+  Generate a monotonic ID from `db`.
+  """
+  @spec generate_id(t()) :: integer | no_return
+  def generate_id(db) do
+    Sled.Native.sled_generate_id(db)
+  end
+
   @typedoc """
   A reference to a sled tree. Passing a `t:t/0` refers to the "default" tree for the db, while a
   `t:Sled.Tree.t/0` references a "tenant" tree.

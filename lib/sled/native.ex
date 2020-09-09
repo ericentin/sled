@@ -14,6 +14,7 @@ defmodule Sled.Native do
   def sled_db_checksum(_db), do: error()
   def sled_size_on_disk(_db), do: error()
   def sled_was_recovered(_db), do: error()
+  def sled_generate_id(_db), do: error()
 
   def sled_checksum(_tree), do: error()
   def sled_flush(_tree), do: error()

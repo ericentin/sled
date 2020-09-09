@@ -94,4 +94,13 @@ defmodule SledTest do
       File.rm_rf!("test_recovered_db")
     end
   end
+
+  test "generate_id", context do
+    db = Sled.open(context.path)
+    a = Sled.generate_id(db)
+    assert is_integer(a)
+    b = Sled.generate_id(db)
+    assert is_integer(b)
+    assert a != b
+  end
 end

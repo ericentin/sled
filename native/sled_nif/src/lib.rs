@@ -40,6 +40,11 @@ fn sled_was_recovered(db: SledDb) -> bool {
 }
 
 #[nif(schedule = "DirtyIo")]
+fn sled_generate_id(db: SledDb) -> NifResult<u64> {
+    rustler_result_from_sled(db.generate_id())
+}
+
+#[nif(schedule = "DirtyIo")]
 fn sled_tree_open(db: SledDb, name: String) -> NifResult<SledTree> {
     rustler_result_from_sled(db.open_tree(name.clone()))
         .map(|tree| SledTree::with_tree_db_and_name(tree, db, name))
@@ -108,6 +113,7 @@ init! {
         sled_db_checksum,
         sled_size_on_disk,
         sled_was_recovered,
+        sled_generate_id,
         sled_checksum,
         sled_flush,
         sled_insert,
