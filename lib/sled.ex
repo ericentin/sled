@@ -115,12 +115,25 @@ defmodule Sled do
     Sled.Native.sled_generate_id(db)
   end
 
-  @doc """
-  Export all collections in `db`. For use with `import/1` for sled version upgrades.
+  @typedoc """
+  Forward-compatible sled export data.
   """
-  @spec export(t()) :: [{binary, binary, [[binary, ...]]}] | no_return
+  @type sled_export :: [{binary, binary, [[binary, ...]]}]
+
+  @doc """
+  Export all collections in `db`. For use with `import/2` for sled version upgrades.
+  """
+  @spec export(t()) :: sled_export | no_return
   def export(db) do
     Sled.Native.sled_export(db)
+  end
+
+  @doc """
+  Import all collections from `export` into `db`. For use with `export/1` for sled version upgrades.
+  """
+  @spec import(t(), sled_export) :: :ok | no_return
+  def import(db, export) do
+    Sled.Native.sled_import(db, export)
   end
 
   @typedoc """

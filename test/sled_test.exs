@@ -112,4 +112,22 @@ defmodule SledTest do
     assert [{"tree", "__sled__default", [["hello", "world"], ["hello2", "world2"]]}] ==
              Sled.export(db)
   end
+
+  test "import", context do
+    db = Sled.open(context.path)
+    Sled.insert(db, "hello", "world")
+    Sled.insert(db, "hello2", "world2")
+    export = Sled.export(db)
+
+    path = Sled.TestHelpers.test_db_name()
+
+    try do
+      db2 = Sled.open(path)
+      assert :ok == Sled.import(db2, export)
+      assert "world" = Sled.get(db2, "hello")
+      assert "world2" = Sled.get(db2, "hello2")
+    after
+      File.rm_rf!(path)
+    end
+  end
 end

@@ -3,7 +3,7 @@
 mod types;
 mod utils;
 
-use rustler::{init, nif, Binary, Env, NifResult, Term};
+use rustler::{init, nif, types::atom::ok, Atom, Binary, Env, NifResult, Term};
 
 use types::*;
 use utils::*;
@@ -78,6 +78,35 @@ fn sled_export(env: Env, db: SledDb) -> NifResult<SledExport> {
 }
 
 #[nif(schedule = "DirtyIo")]
+fn sled_import(db: SledDb, export: SledExport) -> Atom {
+    let mut result = Vec::with_capacity(export.len());
+
+    for (collection_type, collection_name, collection_items) in export {
+        let mut collection_items_result = Vec::with_capacity(collection_items.len());
+
+        for collection_item in collection_items {
+            let mut collection_items_items_result = Vec::with_capacity(collection_item.len());
+
+            for collection_item_item in collection_item {
+                collection_items_items_result.push(Vec::from(&collection_item_item[..]))
+            }
+
+            collection_items_result.push(collection_items_items_result)
+        }
+
+        result.push((
+            Vec::from(&collection_type[..]),
+            Vec::from(&collection_name[..]),
+            collection_items_result.into_iter(),
+        ))
+    }
+
+    db.import(result);
+
+    ok()
+}
+
+#[nif(schedule = "DirtyIo")]
 fn sled_tree_open(db: SledDb, name: String) -> NifResult<SledTree> {
     rustler_result_from_sled(db.open_tree(name.clone()))
         .map(|tree| SledTree::with_tree_db_and_name(tree, db, name))
@@ -148,6 +177,7 @@ init! {
         sled_was_recovered,
         sled_generate_id,
         sled_export,
+        sled_import,
         sled_checksum,
         sled_flush,
         sled_insert,
