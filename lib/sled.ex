@@ -201,7 +201,7 @@ defmodule Sled do
 
   If `old` is `nil`, the value for `key` will be set if it isn't set yet.
 
-  If `new` is `nil`, the value for `key` will be deleted if `old` is matches the current value.
+  If `new` is `nil`, the value for `key` will be deleted if `old` matches the current value.
 
   If both `old` and `new` are not `nil`, the value of `key` will be set to `new` if `old` matches
   the current value.
