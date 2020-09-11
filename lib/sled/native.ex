@@ -23,6 +23,7 @@ defmodule Sled.Native do
   def sled_insert(_tree, _k, _v), do: error()
   def sled_get(_tree, _k), do: error()
   def sled_remove(_tree, _k), do: error()
+  def sled_compare_and_swap(_tree, _k, _old, _new), do: error()
 
   defp error, do: :erlang.nif_error(:nif_not_loaded)
 end

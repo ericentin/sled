@@ -39,6 +39,18 @@ defmodule Sled.TreeTest do
     assert "world2" == Sled.remove(tree, "hello")
   end
 
+  test "cas", %{db: db, tree: tree} do
+    assert {:ok, {}} == Sled.compare_and_swap(db, "hello", nil, "world")
+    assert {:ok, {}} == Sled.compare_and_swap(tree, "hello", nil, "world")
+    assert "world" == Sled.get(db, "hello")
+    assert "world" == Sled.get(tree, "hello")
+    assert {:error, {"world", "world2"}} == Sled.compare_and_swap(tree, "hello", nil, "world2")
+    assert {:ok, {}} == Sled.compare_and_swap(tree, "hello", "world", "world3")
+    assert "world3" == Sled.get(tree, "hello")
+    assert {:ok, {}} == Sled.compare_and_swap(tree, "hello", "world3", nil)
+    assert nil == Sled.get(tree, "hello")
+  end
+
   test "checksum", %{db: db, tree: tree} do
     a = Sled.checksum(db)
     b = Sled.checksum(tree)

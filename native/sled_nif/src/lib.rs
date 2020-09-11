@@ -159,6 +159,36 @@ fn sled_remove<'a>(env: Env<'a>, tree: SledDbTree, k: Binary) -> NifResult<Optio
     try_binary_result_from_sled(env, tree.remove(&k[..]))
 }
 
+#[nif(schedule = "DirtyIo")]
+fn sled_compare_and_swap<'a>(
+    env: Env<'a>,
+    tree: SledDbTree,
+    k: Binary,
+    old: Option<Binary<'a>>,
+    new: Option<Binary<'a>>,
+) -> NifResult<Result<(), (Option<Binary<'a>>, Option<Binary<'a>>)>> {
+    let result = tree.compare_and_swap(
+        &k[..],
+        old.map(|old| old.as_slice()),
+        new.map(|new| new.as_slice()),
+    );
+
+    match rustler_result_from_sled(result)? {
+        Ok(()) => Ok(Ok(())),
+        Err(err) => {
+            let current_bin = match err.current {
+                Some(v) => Some(try_binary_from(env, &v[..])?),
+                None => None,
+            };
+            let proposed_bin = match err.proposed {
+                Some(v) => Some(try_binary_from(env, &v[..])?),
+                None => None,
+            };
+            Ok(Err((current_bin, proposed_bin)))
+        }
+    }
+}
+
 fn on_load(env: Env, _info: Term) -> bool {
     types::on_load(env)
 }
@@ -182,7 +212,8 @@ init! {
         sled_flush,
         sled_insert,
         sled_get,
-        sled_remove
+        sled_remove,
+        sled_compare_and_swap
     ],
     load = on_load
 }

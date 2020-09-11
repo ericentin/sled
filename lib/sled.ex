@@ -195,4 +195,28 @@ defmodule Sled do
   def remove(tree, key) do
     Sled.Native.sled_remove(tree, key)
   end
+
+  @doc """
+  Compare and swap `old` and `new` values for `key` in `tree`.
+
+  If `old` is `nil`, the value for `key` will be set if it isn't set yet.
+
+  If `new` is `nil`, the value for `key` will be deleted if `old` is matches the current value.
+
+  If both `old` and `new` are not `nil`, the value of `key` will be set to `new` if `old` matches
+  the current value.
+
+  Upon success, returns `{:ok, {}}`.
+
+  If the operation fails, `{:error, {current, proposed}}` will be returned instead, where
+  `current` is the current value for `key` which caused the CAS to fail, and `proposed` is the
+  value that was proposed unsuccessfully.
+  """
+  @spec compare_and_swap(tree_ref, binary, binary | nil, binary | nil) ::
+          {:ok, {}}
+          | {:error, {current :: binary, proposed :: binary}}
+          | no_return
+  def compare_and_swap(tree, key, old, new) do
+    Sled.Native.sled_compare_and_swap(tree, key, old, new)
+  end
 end
