@@ -15,13 +15,13 @@ pub fn try_binary_result_from_sled(
     r: sled::Result<Option<IVec>>,
 ) -> NifResult<Option<Binary>> {
     match rustler_result_from_sled(r) {
-        Ok(Some(v)) => try_binary_from_ivec(env, &v).map(&Some),
+        Ok(Some(v)) => try_binary_from(env, &v).map(&Some),
         Ok(None) => Ok(None),
         Err(err) => Err(err),
     }
 }
 
-pub fn try_binary_from_ivec<'a>(env: Env<'a>, v: &IVec) -> NifResult<Binary<'a>> {
+pub fn try_binary_from<'a>(env: Env<'a>, v: &[u8]) -> NifResult<Binary<'a>> {
     match OwnedBinary::new(v.len()) {
         Some(mut owned_binary) => {
             owned_binary.as_mut_slice().copy_from_slice(&v);

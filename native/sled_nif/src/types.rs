@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use rustler::{resource, Env, NifStruct, NifUnitEnum, NifUntaggedEnum, ResourceArc};
+use rustler::{resource, Binary, Env, NifStruct, NifUnitEnum, NifUntaggedEnum, ResourceArc};
 
 use sled::{Config, Db, Tree};
 
@@ -154,6 +154,8 @@ impl Deref for SledDbTree {
         }
     }
 }
+
+pub type SledExport<'a> = Vec<(Binary<'a>, Binary<'a>, Vec<Vec<Binary<'a>>>)>;
 
 pub fn on_load(env: Env) -> bool {
     resource!(SledConfigResource, env);

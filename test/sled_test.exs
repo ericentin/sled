@@ -103,4 +103,13 @@ defmodule SledTest do
     assert is_integer(b)
     assert a != b
   end
+
+  test "export", context do
+    db = Sled.open(context.path)
+    Sled.insert(db, "hello", "world")
+    Sled.insert(db, "hello2", "world2")
+
+    assert [{"tree", "__sled__default", [["hello", "world"], ["hello2", "world2"]]}] ==
+             Sled.export(db)
+  end
 end

@@ -115,6 +115,14 @@ defmodule Sled do
     Sled.Native.sled_generate_id(db)
   end
 
+  @doc """
+  Export all collections in `db`. For use with `import/1` for sled version upgrades.
+  """
+  @spec export(t()) :: [{binary, binary, [[binary, ...]]}] | no_return
+  def export(db) do
+    Sled.Native.sled_export(db)
+  end
+
   @typedoc """
   A reference to a sled tree. Passing a `t:t/0` refers to the "default" tree for the db, while a
   `t:Sled.Tree.t/0` references a "tenant" tree.

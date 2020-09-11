@@ -45,6 +45,39 @@ fn sled_generate_id(db: SledDb) -> NifResult<u64> {
 }
 
 #[nif(schedule = "DirtyIo")]
+fn sled_export(env: Env, db: SledDb) -> NifResult<SledExport> {
+    let export = db.export();
+    let mut result = SledExport::with_capacity(export.len());
+
+    for (collection_type, collection_name, collection_iter) in export {
+        let collection_type_bin = try_binary_from(env, &collection_type)?;
+        let collection_name_bin = try_binary_from(env, &collection_name)?;
+
+        let (lower_size_bound, maybe_upper_size_bound) = collection_iter.size_hint();
+        let mut collection_iter_result =
+            Vec::with_capacity(maybe_upper_size_bound.unwrap_or(lower_size_bound));
+
+        for collection_iter_item in collection_iter {
+            let mut collection_iter_item_result = Vec::with_capacity(collection_iter_item.len());
+
+            for collection_iter_item_item in collection_iter_item {
+                collection_iter_item_result.push(try_binary_from(env, &collection_iter_item_item)?)
+            }
+
+            collection_iter_result.push(collection_iter_item_result)
+        }
+
+        result.push((
+            collection_type_bin,
+            collection_name_bin,
+            collection_iter_result,
+        ))
+    }
+
+    Ok(result)
+}
+
+#[nif(schedule = "DirtyIo")]
 fn sled_tree_open(db: SledDb, name: String) -> NifResult<SledTree> {
     rustler_result_from_sled(db.open_tree(name.clone()))
         .map(|tree| SledTree::with_tree_db_and_name(tree, db, name))
@@ -61,7 +94,7 @@ fn sled_tree_names(env: Env, db: SledDb) -> NifResult<Vec<Binary>> {
     let mut result = Vec::with_capacity(tree_names.len());
 
     for tree_name in tree_names {
-        result.push(try_binary_from_ivec(env, &tree_name)?)
+        result.push(try_binary_from(env, &tree_name)?)
     }
 
     Ok(result)
@@ -114,6 +147,7 @@ init! {
         sled_size_on_disk,
         sled_was_recovered,
         sled_generate_id,
+        sled_export,
         sled_checksum,
         sled_flush,
         sled_insert,
