@@ -51,15 +51,15 @@ defmodule SledTest do
   test "db_checksum", context do
     assert db = Sled.open(context.path)
     db_checksum = Sled.db_checksum(db)
-    Sled.insert(db, "hello", "world")
+    Sled.Tree.insert(db, "hello", "world")
     assert db_checksum != Sled.db_checksum(db)
   end
 
   test "size_on_disk", context do
     assert db = Sled.open(context.path)
     size_on_disk = Sled.size_on_disk(db)
-    Sled.insert(db, "hello", :crypto.strong_rand_bytes(1000))
-    Sled.flush(db)
+    Sled.Tree.insert(db, "hello", :crypto.strong_rand_bytes(1000))
+    Sled.Tree.flush(db)
     assert size_on_disk != Sled.size_on_disk(db)
   end
 
@@ -106,8 +106,8 @@ defmodule SledTest do
 
   test "export", context do
     db = Sled.open(context.path)
-    Sled.insert(db, "hello", "world")
-    Sled.insert(db, "hello2", "world2")
+    Sled.Tree.insert(db, "hello", "world")
+    Sled.Tree.insert(db, "hello2", "world2")
 
     assert [{"tree", "__sled__default", [["hello", "world"], ["hello2", "world2"]]}] ==
              Sled.export(db)
@@ -115,8 +115,8 @@ defmodule SledTest do
 
   test "import", context do
     db = Sled.open(context.path)
-    Sled.insert(db, "hello", "world")
-    Sled.insert(db, "hello2", "world2")
+    Sled.Tree.insert(db, "hello", "world")
+    Sled.Tree.insert(db, "hello2", "world2")
     export = Sled.export(db)
 
     path = Sled.TestHelpers.test_db_name()
@@ -124,8 +124,8 @@ defmodule SledTest do
     try do
       db2 = Sled.open(path)
       assert :ok == Sled.import(db2, export)
-      assert "world" = Sled.get(db2, "hello")
-      assert "world2" = Sled.get(db2, "hello2")
+      assert "world" = Sled.Tree.get(db2, "hello")
+      assert "world2" = Sled.Tree.get(db2, "hello2")
     after
       File.rm_rf!(path)
     end

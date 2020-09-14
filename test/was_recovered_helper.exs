@@ -1,3 +1,3 @@
 "test_recovered_db"
 |> Sled.open()
-|> Sled.flush()
+|> Sled.Tree.flush()
