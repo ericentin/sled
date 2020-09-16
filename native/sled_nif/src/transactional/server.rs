@@ -1,5 +1,7 @@
 use crossbeam_channel::Receiver;
-use rustler::{types::atom::ok, Binary, Encoder, Env, LocalPid, OwnedBinary, Term};
+use rustler::{
+    types::atom::nil, types::atom::ok, Binary, Encoder, Env, LocalPid, OwnedBinary, Term,
+};
 use sled::{
     transaction::abort, transaction::ConflictableTransactionError, transaction::TransactionError,
     IVec, Tree,
@@ -29,7 +31,7 @@ pub fn transaction_server<'a>(
                             let result = try_ivec_to_binary(env, v)?;
                             reply(env, caller, req_ref, result)
                         }
-                        None => reply(env, caller, req_ref, None as Option<Term>),
+                        None => reply(env, caller, req_ref, nil()),
                     }
                 }
                 SledTransactionalTreeCommand::Flush => {
