@@ -1,12 +1,13 @@
 #![warn(clippy::all, clippy::pedantic)]
 
+mod transactional;
 mod types;
-mod utils;
 
-use rustler::{init, nif, types::atom::ok, Atom, Binary, Env, NifResult, Term};
+use rustler::{init, nif, types::atom::ok, Atom, Binary, Env, Error, NifResult, OwnedBinary, Term};
 
+use sled::IVec;
+use transactional::*;
 use types::*;
-use utils::*;
 
 #[nif]
 fn sled_config_new(opts: SledConfigOptions) -> NifResult<SledConfig> {
@@ -189,8 +190,60 @@ fn sled_compare_and_swap<'a>(
     }
 }
 
+#[nif(schedule = "DirtyIo")]
+fn sled_transaction(env: Env, tree: SledDbTree) -> SledTransactionalTree {
+    transaction_new(env, tree)
+}
+
+#[nif(schedule = "DirtyIo")]
+fn sled_transaction_close(env: Env, tx_tree: SledTransactionalTree, req_ref: Binary) {
+    transaction_close(env, tx_tree, req_ref).unwrap()
+}
+
+#[nif(schedule = "DirtyIo")]
+fn sled_transaction_insert(
+    env: Env,
+    tx_tree: SledTransactionalTree,
+    req_ref: Binary,
+    k: Binary,
+    v: Binary,
+) {
+    transaction_insert(env, tx_tree, req_ref, k, v).unwrap()
+}
+
 fn on_load(env: Env, _info: Term) -> bool {
     types::on_load(env)
+}
+
+fn rustler_result_from_sled<T>(r: sled::Result<T>) -> NifResult<T> {
+    r.map_err(|err| raise_term_from_string(format!("sled::Error::{:?}", err)))
+}
+
+fn raise_term_from_string(error: String) -> Error {
+    Error::RaiseTerm(Box::new(error))
+}
+
+fn try_binary_result_from_sled(
+    env: Env,
+    r: sled::Result<Option<IVec>>,
+) -> NifResult<Option<Binary>> {
+    match rustler_result_from_sled(r) {
+        Ok(Some(v)) => try_binary_from(env, &v).map(&Some),
+        Ok(None) => Ok(None),
+        Err(err) => Err(err),
+    }
+}
+
+fn try_binary_from<'a>(env: Env<'a>, v: &[u8]) -> NifResult<Binary<'a>> {
+    match OwnedBinary::new(v.len()) {
+        Some(mut owned_binary) => {
+            owned_binary.as_mut_slice().copy_from_slice(&v);
+            Ok(owned_binary.release(env))
+        }
+        None => Err(raise_term_from_string(String::from(
+            "failed to allocate OwnedBinary for result value",
+        ))),
+    }
 }
 
 init! {
@@ -213,7 +266,10 @@ init! {
         sled_insert,
         sled_get,
         sled_remove,
-        sled_compare_and_swap
+        sled_compare_and_swap,
+        sled_transaction,
+        sled_transaction_close,
+        sled_transaction_insert,
     ],
     load = on_load
 }

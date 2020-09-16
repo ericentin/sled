@@ -16,3 +16,5 @@ crate-type = ["dylib"]
 rustler = "^0.22.0-rc"
 lazy_static = "^1"
 sled = "^0"
+crossbeam-channel = "^0"
+crossbeam-utils = "^0"

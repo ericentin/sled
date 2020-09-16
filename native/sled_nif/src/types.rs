@@ -1,8 +1,10 @@
 use std::ops::Deref;
 
-use rustler::{resource, Binary, Env, NifStruct, NifUnitEnum, NifUntaggedEnum, ResourceArc};
-
-use sled::{Config, Db, Tree};
+use crossbeam_channel::{SendError, Sender};
+use rustler::{
+    resource, Binary, Env, LocalPid, NifStruct, NifUnitEnum, NifUntaggedEnum, ResourceArc,
+};
+use sled::{Config, Db, IVec, Tree};
 
 #[derive(NifUnitEnum)]
 enum Mode {
@@ -157,9 +159,51 @@ impl Deref for SledDbTree {
 
 pub type SledExport<'a> = Vec<(Binary<'a>, Binary<'a>, Vec<Vec<Binary<'a>>>)>;
 
+pub enum SledTransactionalTreeCommand {
+    Insert(IVec, IVec),
+    Flush,
+    Close,
+}
+
+pub type SledTransactionalTreeRequest = (LocalPid, Vec<u8>, SledTransactionalTreeCommand);
+
+pub type SledTransactionalTreeSender = Sender<SledTransactionalTreeRequest>;
+
+pub type SledTransactionalTreeSenderResult = Result<(), SendError<SledTransactionalTreeRequest>>;
+
+struct SledTransactionalTreeResource(SledTransactionalTreeSender);
+
+#[derive(NifStruct)]
+#[module = "Sled.Tree.Transactional"]
+pub struct SledTransactionalTree {
+    r#ref: ResourceArc<SledTransactionalTreeResource>,
+    tree: SledDbTree,
+}
+
+impl SledTransactionalTree {
+    pub fn with_tree_and_sender(
+        tree: SledDbTree,
+        sender: SledTransactionalTreeSender,
+    ) -> SledTransactionalTree {
+        SledTransactionalTree {
+            r#ref: ResourceArc::new(SledTransactionalTreeResource(sender)),
+            tree,
+        }
+    }
+}
+
+impl Deref for SledTransactionalTree {
+    type Target = SledTransactionalTreeSender;
+
+    fn deref(&self) -> &Self::Target {
+        &self.r#ref.0
+    }
+}
+
 pub fn on_load(env: Env) -> bool {
     resource!(SledConfigResource, env);
     resource!(SledDbResource, env);
     resource!(SledTreeResource, env);
+    resource!(SledTransactionalTreeResource, env);
     true
 }

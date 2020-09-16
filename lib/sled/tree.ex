@@ -93,4 +93,21 @@ defmodule Sled.Tree do
   def compare_and_swap(tree, key, old, new) do
     Sled.Native.sled_compare_and_swap(tree, key, old, new)
   end
+
+  def transaction(tree, fun) do
+    tx_tree = Sled.Native.sled_transaction(tree)
+    req_ref = make_ref()
+
+    result =
+      try do
+        fun.(tx_tree)
+      after
+        Sled.Native.sled_transaction_close(tx_tree, :erlang.term_to_binary(req_ref))
+      end
+
+    receive do
+      {:ok, ^req_ref} ->
+        {:ok, result}
+    end
+  end
 end

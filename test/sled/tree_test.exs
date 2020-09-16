@@ -82,4 +82,17 @@ defmodule Sled.TreeTest do
     assert tree_name in tree_names
     assert length(tree_names) == 2
   end
+
+  test "transaction", %{db: _db, tree: tree} do
+    assert {:ok, :result} =
+             Sled.Tree.transaction(tree, fn tx_tree ->
+               assert nil ==
+                        Sled.Tree.Transactional.insert(tx_tree, "hello", "world")
+
+               assert "world" ==
+                        Sled.Tree.Transactional.insert(tx_tree, "hello", "world2")
+
+               :result
+             end)
+  end
 end
