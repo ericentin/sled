@@ -11,8 +11,14 @@ defmodule Sled.Tree.Transactional do
   @opaque t :: %__MODULE__{ref: reference(), tree: Sled.Tree.tree_ref()}
 
   def insert(%Sled.Tree.Transactional{} = tree, key, value) do
+    do_call(fn req_ref ->
+      Sled.Native.sled_transaction_insert(tree, req_ref, key, value)
+    end)
+  end
+
+  defp do_call(fun) do
     req_ref = make_ref()
-    Sled.Native.sled_transaction_insert(tree, :erlang.term_to_binary(req_ref), key, value)
+    fun.(:erlang.term_to_binary(req_ref))
 
     receive do
       {:sled_transaction, ^req_ref, result} -> result

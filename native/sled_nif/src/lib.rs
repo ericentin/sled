@@ -1,11 +1,14 @@
 #![warn(clippy::all, clippy::pedantic)]
 
+#[macro_use]
+extern crate lazy_static;
+
 mod transactional;
 mod types;
 
 use rustler::{init, nif, types::atom::ok, Atom, Binary, Env, Error, NifResult, OwnedBinary, Term};
-
 use sled::IVec;
+
 use transactional::*;
 use types::*;
 
