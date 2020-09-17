@@ -196,19 +196,18 @@ fn sled_transaction(env: Env, tree: SledDbTree) -> SledTransactionalTree {
 }
 
 #[nif(schedule = "DirtyIo")]
-fn sled_transaction_close(env: Env, tx_tree: SledTransactionalTree, req_ref: Binary) {
-    transaction_close(env, tx_tree, req_ref).unwrap()
+fn sled_transaction_close(tx_tree: SledTransactionalTree) {
+    transaction_close(tx_tree).unwrap()
 }
 
 #[nif(schedule = "DirtyIo")]
-fn sled_transaction_insert(
-    env: Env,
-    tx_tree: SledTransactionalTree,
-    req_ref: Binary,
-    k: Binary,
-    v: Binary,
-) {
-    transaction_insert(env, tx_tree, req_ref, k, v).unwrap()
+fn sled_transaction_abort(tx_tree: SledTransactionalTree) {
+    transaction_abort(tx_tree).unwrap()
+}
+
+#[nif(schedule = "DirtyIo")]
+fn sled_transaction_insert(env: Env, tx_tree: SledTransactionalTree, k: Binary, v: Binary) {
+    transaction_insert(env.pid(), tx_tree, k, v).unwrap()
 }
 
 fn on_load(env: Env, _info: Term) -> bool {
@@ -269,6 +268,7 @@ init! {
         sled_compare_and_swap,
         sled_transaction,
         sled_transaction_close,
+        sled_transaction_abort,
         sled_transaction_insert,
     ],
     load = on_load

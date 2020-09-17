@@ -94,5 +94,22 @@ defmodule Sled.TreeTest do
 
                :result
              end)
+
+    assert "world2" = Sled.Tree.get(tree, "hello")
+  end
+
+  test "transaction abort", %{db: _db, tree: tree} do
+    assert {:error, :problem} =
+             Sled.Tree.transaction(tree, fn tx_tree ->
+               assert nil ==
+                        Sled.Tree.Transactional.insert(tx_tree, "hello", "world")
+
+               assert "world" ==
+                        Sled.Tree.Transactional.insert(tx_tree, "hello", "world2")
+
+               Sled.Tree.Transactional.abort(:problem)
+             end)
+
+    assert nil == Sled.Tree.get(tree, "hello")
   end
 end

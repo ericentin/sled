@@ -96,18 +96,49 @@ defmodule Sled.Tree do
 
   def transaction(tree, fun) do
     tx_tree = Sled.Native.sled_transaction(tree)
-    req_ref = make_ref()
-
-    result =
-      try do
-        fun.(tx_tree)
-      after
-        Sled.Native.sled_transaction_close(tx_tree, :erlang.term_to_binary(req_ref))
-      end
 
     receive do
-      {:ok, ^req_ref} ->
-        {:ok, result}
+      {:sled_transaction_status, :start} -> :ok
+    end
+
+    do_transaction(tree, fun, tx_tree)
+  end
+
+  def do_transaction(tree, fun, tx_tree) do
+    try do
+      fun.(tx_tree)
+    else
+      result ->
+        Sled.Native.sled_transaction_close(tx_tree)
+
+        receive do
+          {:sled_transaction_status, :start} -> do_transaction(tree, fun, tx_tree)
+          {:sled_transaction_complete, {:ok, {}}} -> {:ok, result}
+          {:sled_transaction_complete, error} -> error
+        end
+    catch
+      {:sled_transaction_status, :start} ->
+        do_transaction(tree, fun, tx_tree)
+
+      {:sled_transaction_complete, {:error, reason}} ->
+        {:error, reason}
+
+      {:sled_transaction_abort, reason} ->
+        Sled.Native.sled_transaction_abort(tx_tree)
+
+        receive do
+          {:sled_transaction_complete, {:error, {:abort, nil}}} ->
+            {:error, reason}
+        end
+
+      class, reason ->
+        Sled.Native.sled_transaction_abort(tx_tree)
+
+        receive do
+          {:sled_transaction_complete, {:error, {:abort, nil}}} -> :ok
+        end
+
+        :erlang.raise(class, reason, __STACKTRACE__)
     end
   end
 end

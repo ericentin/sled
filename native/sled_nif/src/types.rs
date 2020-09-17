@@ -1,10 +1,10 @@
 use std::ops::Deref;
 
-use crossbeam_channel::{SendError, Sender};
-use rustler::{
-    resource, Binary, Env, LocalPid, NifStruct, NifUnitEnum, NifUntaggedEnum, ResourceArc,
+use crossbeam_channel::{RecvError, SendError, Sender};
+use rustler::{resource, Binary, Env, NifStruct, NifUnitEnum, NifUntaggedEnum, ResourceArc};
+use sled::{
+    transaction::ConflictableTransactionResult, transaction::TransactionalTree, Config, Db, Tree,
 };
-use sled::{Config, Db, IVec, Tree};
 
 #[derive(NifUnitEnum)]
 enum Mode {
@@ -159,15 +159,40 @@ impl Deref for SledDbTree {
 
 pub type SledExport<'a> = Vec<(Binary<'a>, Binary<'a>, Vec<Vec<Binary<'a>>>)>;
 
-pub enum SledTransactionalTreeCommand {
-    Insert(IVec, IVec),
-    Flush,
+pub enum SledTransactionalTreeAction {
+    Continue,
     Close,
+    Abort,
 }
 
-pub type SledTransactionalTreeRequest = (LocalPid, Vec<u8>, SledTransactionalTreeCommand);
+pub enum SledTransactionServerError {
+    UserAbort,
+    RecvError(RecvError),
+    OwnedBinaryError,
+}
 
-pub type SledTransactionalTreeSender = Sender<SledTransactionalTreeRequest>;
+type SledTransactionalTreeResult =
+    ConflictableTransactionResult<SledTransactionalTreeAction, SledTransactionServerError>;
+
+pub type SledTransactionalTreeCommand =
+    dyn Fn(Env, &TransactionalTree) -> SledTransactionalTreeResult + Send + 'static;
+
+pub struct SledTransactionalTreeRequest(Box<SledTransactionalTreeCommand>);
+
+impl SledTransactionalTreeRequest {
+    pub fn new<F>(fun: F) -> Self
+    where
+        F: Fn(Env, &TransactionalTree) -> SledTransactionalTreeResult + Send + 'static,
+    {
+        SledTransactionalTreeRequest(Box::new(fun))
+    }
+
+    pub fn invoke(&self, env: Env, tree: &TransactionalTree) -> SledTransactionalTreeResult {
+        self.0(env, tree)
+    }
+}
+
+type SledTransactionalTreeSender = Sender<SledTransactionalTreeRequest>;
 
 pub type SledTransactionalTreeSenderResult = Result<(), SendError<SledTransactionalTreeRequest>>;
 
