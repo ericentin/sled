@@ -1,20 +1,18 @@
 mod server;
-mod thread_pool;
 
 use crossbeam_channel::unbounded;
 use crossbeam_utils::atomic::AtomicCell;
-use rustler::{spawn, Binary, Env, LocalPid};
+use rustler::{spawn, Binary, Env, LocalPid, ThreadSpawner};
 use sled::IVec;
 
 use crate::types::*;
 use server::transaction_server;
-use thread_pool::ThreadPoolSpawner;
 
 pub fn transaction_new(env: Env, tree: SledDbTree) -> SledTransactionalTree {
     let (s, r) = unbounded();
     let tree_cell = AtomicCell::new(tree.clone());
 
-    spawn::<ThreadPoolSpawner, _>(env, move |thread_env: Env| {
+    spawn::<ThreadSpawner, _>(env, move |thread_env: Env| {
         transaction_server(thread_env, &tree_cell.into_inner(), &r)
     });
 
