@@ -39,14 +39,14 @@ struct SledConfigResource(Config);
 impl SledConfigResource {
     fn with_opts(opts: SledConfigOptions) -> SledConfigResource {
         SledConfigResource(Config::new())
-            .set(&Config::path, opts.path)
-            .set(&Config::cache_capacity, opts.cache_capacity)
-            .set(&Config::mode, opts.mode.map(&sled::Mode::from))
-            .set(&Config::use_compression, opts.use_compression)
-            .set(&Config::compression_factor, opts.compression_factor)
-            .set(&Config::temporary, opts.temporary)
-            .set(&Config::create_new, opts.create_new)
-            .set(&Config::print_profile_on_drop, opts.print_profile_on_drop)
+            .set(Config::path, opts.path)
+            .set(Config::cache_capacity, opts.cache_capacity)
+            .set(Config::mode, opts.mode.map(sled::Mode::from))
+            .set(Config::use_compression, opts.use_compression)
+            .set(Config::compression_factor, opts.compression_factor)
+            .set(Config::temporary, opts.temporary)
+            .set(Config::create_new, opts.create_new)
+            .set(Config::print_profile_on_drop, opts.print_profile_on_drop)
     }
 
     fn set<T, F: Fn(Config, T) -> Config>(
@@ -151,8 +151,8 @@ impl Deref for SledDbTree {
 
     fn deref(&self) -> &Tree {
         match &self {
-            SledDbTree::Default(db) => &db,
-            SledDbTree::Tenant(tree) => &tree,
+            SledDbTree::Default(db) => db,
+            SledDbTree::Tenant(tree) => tree,
         }
     }
 }
@@ -168,7 +168,6 @@ pub enum SledTransactionalTreeAction {
 pub enum SledTransactionServerError {
     UserAbort,
     RecvError(RecvError),
-    OwnedBinaryError,
 }
 
 type SledTransactionalTreeResult =

@@ -95,13 +95,7 @@ defmodule Sled.Tree do
   end
 
   def transaction(tree, fun) do
-    tx_tree = Sled.Native.sled_transaction(tree)
-
-    receive do
-      {:sled_transaction_status, :start} -> :ok
-    end
-
-    do_transaction(tree, fun, tx_tree)
+    do_transaction(tree, fun, Sled.Native.sled_transaction(tree))
   end
 
   def do_transaction(tree, fun, tx_tree) do
