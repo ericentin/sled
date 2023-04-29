@@ -32,7 +32,7 @@ defmodule SledTest do
 
   test "open invalid db_path" do
     assert_raise ErlangError,
-                 ~r/Erlang error: \"sled::Error::Io\(Custom { kind: InvalidInput, error: .*/,
+                 ~r/Erlang error: \"sled::Error::Io\(Error { kind: InvalidInput, message: .*/,
                  fn -> Sled.open("\0") end
   end
 
