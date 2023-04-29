@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Setup rust
-      uses: actions-rs/toolchain@v1.0.5
+      uses: actions-rs/toolchain@v1
       with:
         default: true
         toolchain: stable
@@ -19,8 +19,8 @@ jobs:
     - name: Setup elixir
       uses: actions/setup-elixir@v1
       with:
-        elixir-version: '1.10.x'
-        otp-version: '23.x'
+        elixir-version: '1.14.x'
+        otp-version: '25.x'
     - name: Install Dependencies
       run: mix deps.get
     - name: Check Elixir Formatting
